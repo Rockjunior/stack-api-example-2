@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Tracking Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .console-log { background: #f0f0f0; padding: 10px; margin: 10px 0; font-family: monospace; }
+        button { padding: 10px 15px; margin: 5px; }
+        input, select { padding: 5px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Database Tracking Test</h1>
+    
+    <div class="test-section">
+        <h2>Session Status</h2>
+        <div id="sessionStatus">Checking session...</div>
+        <button onclick="testSession()">Test Session</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>Database Tables Test</h2>
+        <button onclick="testTables()">Test All Tables</button>
+        <div id="tableResults"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Console Logs</h2>
+        <div id="consoleLogs" class="console-log">
+            Logs will appear here...
+        </div>
+        <button onclick="clearLogs()">Clear Logs</button>
+    </div>
+
+    <!-- Supabase JavaScript Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Supabase Configuration -->
+    <script src="login/config.js"></script>
+    <script src="js/database.js"></script>
+    
+    <script>
+        // Override console.log to show in page
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        
+        function addToLog(type, ...args) {
+            const logDiv = document.getElementById('consoleLogs');
+            const timestamp = new Date().toLocaleTimeString();
+            const message = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+            ).join(' ');
+            
+            logDiv.innerHTML += `<div>[${timestamp}] ${type.toUpperCase()}: ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        console.log = (...args) => {
+            originalLog(...args);
+            addToLog('log', ...args);
+        };
+        
+        console.error = (...args) => {
+            originalError(...args);
+            addToLog('error', ...args);
+        };
+        
+        console.warn = (...args) => {
+            originalWarn(...args);
+            addToLog('warn', ...args);
+        };
+        
+        function clearLogs() {
+            document.getElementById('consoleLogs').innerHTML = 'Logs cleared...';
+        }
+        
+        async function testSession() {
+            console.log('Testing session initialization...');
+            const session = await window.databaseTracking.initializeDatabaseSession();
+            
+            const statusDiv = document.getElementById('sessionStatus');
+            if (session) {
+                statusDiv.innerHTML = `
+                    <div style="color: green;">✅ Session Created Successfully!</div>
+                    <div>Session ID: ${session.id}</div>
+                    <div>Anonymous ID: ${session.anonymous_id}</div>
+                    <div>Started: ${new Date(session.session_start).toLocaleString()}</div>
+                `;
+                console.log('Session created:', session);
+            } else {
+                statusDiv.innerHTML = `<div style="color: red;">❌ Session Creation Failed</div>`;
+                console.error('Session creation failed');
+            }
+        }
+        
+        async function testTables() {
+            if (!supabase) {
+                console.error('Supabase not configured');
+                return;
+            }
+            
+            console.log('Testing database table access...');
+            const resultsDiv = document.getElementById('tableResults');
+            let results = '<h3>Table Access Test Results:</h3>';
+            
+            // Test learning_sessions table
+            try {
+                const { data, error } = await supabase
+                    .from('learning_sessions')
+                    .select('id, session_start, anonymous_id')
+                    .limit(5);
+                    
+                if (error) {
+                    results += `<div style="color: red;">❌ learning_sessions: ${error.message}</div>`;
+                    console.error('learning_sessions error:', error);
+                } else {
+                    results += `<div style="color: green;">✅ learning_sessions: ${data.length} records found</div>`;
+                    console.log('learning_sessions data:', data);
+                }
+            } catch (e) {
+                results += `<div style="color: red;">❌ learning_sessions: ${e.message}</div>`;
+                console.error('learning_sessions exception:', e);
+            }
+            
+            // Test question_attempts table
+            try {
+                const { data, error } = await supabase
+                    .from('question_attempts')
+                    .select('id, question_file, started_at')
+                    .limit(5);
+                    
+                if (error) {
+                    results += `<div style="color: red;">❌ question_attempts: ${error.message}</div>`;
+                    console.error('question_attempts error:', error);
+                } else {
+                    results += `<div style="color: green;">✅ question_attempts: ${data.length} records found</div>`;
+                    console.log('question_attempts data:', data);
+                }
+            } catch (e) {
+                results += `<div style="color: red;">❌ question_attempts: ${e.message}</div>`;
+                console.error('question_attempts exception:', e);
+            }
+            
+            // Test input_tracking table
+            try {
+                const { data, error } = await supabase
+                    .from('input_tracking')
+                    .select('id, input_name, input_value, timestamp')
+                    .limit(5);
+                    
+                if (error) {
+                    results += `<div style="color: red;">❌ input_tracking: ${error.message}</div>`;
+                    console.error('input_tracking error:', error);
+                } else {
+                    results += `<div style="color: green;">✅ input_tracking: ${data.length} records found</div>`;
+                    console.log('input_tracking data:', data);
+                }
+            } catch (e) {
+                results += `<div style="color: red;">❌ input_tracking: ${e.message}</div>`;
+                console.error('input_tracking exception:', e);
+            }
+            
+            resultsDiv.innerHTML = results;
+        }
+        
+        // Initialize when page loads
+        window.addEventListener('load', async function() {
+            console.log('Test page loaded');
+            
+            if (!supabase) {
+                console.error('Supabase not configured. Please check login/config.js');
+                document.getElementById('sessionStatus').innerHTML = 
+                    '<div style="color: red;">❌ Supabase not configured. Please check login/config.js</div>';
+                return;
+            }
+            
+            console.log('Supabase client available');
+            await testSession();
+        });
+    </script>
+</body>
+</html> 
