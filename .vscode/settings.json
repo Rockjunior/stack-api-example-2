@@ -1,0 +1,9 @@
+{
+    "xml.fileAssociations": [
+        {
+            "pattern": "**/source/**.ptx",
+            "systemId": "c:\\Users\\RODGERS\\.vscode\\extensions\\oscarlevin.pretext-tools-0.33.0\\assets\\schema\\pretext-dev.rng"
+        }
+    ],
+    "livePreview.defaultPreviewPath": "/login/login.html"
+}
