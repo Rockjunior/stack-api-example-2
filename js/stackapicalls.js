@@ -3,7 +3,7 @@ const inputPrefix = 'stackapi_input_';
 const feedbackPrefix = 'stackapi_fb_';
 const validationPrefix = 'stackapi_val_';
 // const xmlfiles = ['questions/calc.xml', 'questions/stack_jxg.binding-demo-4.4.xml'];
-const apiUrl = 'https://stackapi-1-43834256136.europe-west1.run.app';
+const apiUrl = 'http://localhost:3080';
 
 const stackstring = {
   "teacheranswershow_mcq":"A correct answer is: {$a->display}",
@@ -148,13 +148,22 @@ function send(qfile, qname, qprefix) {
           }
         }
         let sampleText = json.questionsamplesolutiontext;
+        console.log('📝 Processing general feedback content:', sampleText ? 'Content found' : 'No content');
         if (sampleText) {
           sampleText = replaceFeedbackTags(sampleText,qprefix);
-          document.getElementById(`${qprefix+'generalfeedback'}`).innerHTML = sampleText;
-          document.getElementById(`${qprefix+'stackapi_generalfeedback'}`).style.display = 'block';
+          const generalFeedbackContent = document.getElementById(`${qprefix+'generalfeedback'}`);
+          if (generalFeedbackContent) {
+            generalFeedbackContent.innerHTML = sampleText;
+            console.log('✅ General feedback content populated');
+          } else {
+            console.error('❌ General feedback content element not found:', `${qprefix+'generalfeedback'}`);
+          }
+          // Don't show general feedback immediately - wait for submission
+          document.getElementById(`${qprefix+'stackapi_generalfeedback'}`).style.display = 'none';
         } else {
           // If the question is updated, there may no longer be general feedback.
           document.getElementById(`${qprefix+'stackapi_generalfeedback'}`).style.display = 'none';
+          console.log('⚠️ No general feedback content available for this question');
         }
         document.getElementById(`${qprefix+'stackapi_score'}`).style.display = 'none';
         document.getElementById(`${qprefix+'stackapi_validity'}`).innerText = '';
@@ -163,7 +172,7 @@ function send(qfile, qname, qprefix) {
         innerFeedback.classList.remove('feedback');
         document.getElementById(`${qprefix+'formatcorrectresponse'}`).innerHTML = correctAnswers;
 
-        // Hide General feedback and correct answers for now
+        // Hide General feedback and correct answers for now (will show after submission)
         document.getElementById(`${qprefix+'stackapi_generalfeedback'}`).style.display = 'none';
         document.getElementById(`${qprefix+'stackapi_correct'}`).style.display = 'none';
 
@@ -233,6 +242,188 @@ function validate(element, qfile, qname, qprefix) {
   });
 }
 
+// Call AI feedback service
+async function callAIFeedback(qprefix, userAnswers, gradingResponse, questionName, score, maxScore, isCorrect) {
+  try {
+    // Debug: Log the qprefix to see which question we're targeting
+    console.log('AI Feedback for question prefix:', qprefix);
+    
+    // Show loading indicator - try multiple possible element selectors
+    let aiSection = document.getElementById(`${qprefix}ai_feedback_section`);
+    let aiFeedback = document.getElementById(`${qprefix}ai_feedback`);
+    
+    // If not found, try without underscore (fallback for question 1)
+    if (!aiSection) {
+      aiSection = document.getElementById(`q1ai_feedback_section`);
+      console.log('Fallback: trying q1ai_feedback_section');
+    }
+    if (!aiFeedback) {
+      aiFeedback = document.getElementById(`q1ai_feedback`);
+      console.log('Fallback: trying q1ai_feedback');
+    }
+    
+    console.log('AI Section element:', aiSection);
+    console.log('AI Feedback element:', aiFeedback);
+    console.log('Expected section ID:', `${qprefix}ai_feedback_section`);
+    console.log('Expected feedback ID:', `${qprefix}ai_feedback`);
+    
+    if (!aiSection || !aiFeedback) {
+      console.error('AI feedback elements not found for prefix:', qprefix);
+      return;
+    }
+    
+    aiSection.style.display = 'block';
+    aiFeedback.innerHTML = '<div class="ai-loading">⚡ AI is analyzing your response...</div>';
+
+    // Extract correct answer or general feedback for comparison
+    const correctAnswer = gradingResponse.formatcorrectresponse || 
+                         gradingResponse.generalfeedback || 
+                         gradingResponse.responsesummary || 
+                         "No solution provided";
+
+    // Extract comprehensive question information
+    let questionText = "Question text not found";
+    let questionType = "Unknown";
+    let additionalContext = "";
+    
+    // Get the question block for this specific question
+    const questionBlock = document.querySelector(`[id*="${qprefix}"]`)?.closest('.que.stack') || 
+                         document.querySelector('.que.stack');
+    
+    if (questionBlock) {
+      // Extract the main question text (before any input fields or feedback)
+      const questionTextElement = questionBlock.querySelector('.qtext, .questiontext, [class*="questiontext"]');
+      if (questionTextElement) {
+        questionText = questionTextElement.textContent.trim();
+      }
+      
+      // If not found, try to extract from the beginning of the question block
+      if (questionText === "Question text not found") {
+        const allText = questionBlock.textContent || "";
+        const lines = allText.split('\n').map(line => line.trim()).filter(line => line);
+        
+        // Find lines that look like question content (before feedback sections)
+        const questionLines = [];
+        for (const line of lines) {
+          if (line.includes('Score:') || 
+              line.includes('Correct answer') || 
+              line.includes('General feedback') ||
+              line.includes('Response summary') ||
+              line.includes('AI Tutor Feedback') ||
+              line.includes('Marks for this submission')) {
+            break;
+          }
+          if (line.length > 10 && !line.includes('Submit')) {
+            questionLines.push(line);
+          }
+        }
+        
+        if (questionLines.length > 0) {
+          questionText = questionLines.join(' ').substring(0, 500); // Limit length
+        }
+      }
+      
+      // Detect question type based on input elements
+      const inputs = questionBlock.querySelectorAll('input, select, textarea');
+      if (inputs.length > 0) {
+        const inputTypes = Array.from(inputs).map(input => input.type || input.tagName.toLowerCase());
+        if (inputTypes.includes('text') || inputTypes.includes('textarea')) {
+          questionType = "Text/Algebraic Input";
+        }
+        if (inputTypes.includes('radio')) {
+          questionType = "Multiple Choice";
+        }
+        if (inputTypes.includes('checkbox')) {
+          questionType = "Multiple Selection";
+        }
+      }
+      
+      // Look for mathematical notation or special elements
+      if (questionBlock.querySelector('.MathJax, [class*="math"], .katex')) {
+        additionalContext += " Contains mathematical expressions.";
+      }
+      
+      // Look for graphs or interactive elements
+      if (questionBlock.querySelector('canvas, svg, [id*="jxg"], [class*="graph"]')) {
+        additionalContext += " Contains interactive graph or diagram.";
+        questionType = "Interactive/Graphical";
+      }
+    }
+    
+    // Clean up the question text
+    questionText = questionText.replace(/\s+/g, ' ').trim();
+
+    console.log('Question text extracted:', questionText);
+
+    // Call AI service (use custom API service on port 3000)
+    const response = await fetch('http://localhost:3000/ai/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userAnswers: userAnswers,
+        correctAnswer: correctAnswer,
+        generalFeedback: gradingResponse.generalfeedback,
+        questionName: questionName,
+        questionText: questionText,
+        questionType: questionType,
+        additionalContext: additionalContext,
+        score: score,
+        maxScore: maxScore,
+        isCorrect: isCorrect
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const aiData = await response.json();
+    
+    if (aiData.success) {
+      // Format the AI response with better styling
+      const formattedFeedback = aiData.feedback
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\n\n/g, '</p><p>')
+        .replace(/\n/g, '<br>');
+      
+      aiFeedback.innerHTML = `
+        <div class="ai-response-content">
+          <div class="ai-response-header">
+            <span class="ai-icon">🤖</span>
+            <span class="ai-title">AI Tutor Feedback</span>
+          </div>
+          <div class="ai-response-body">
+            <p>${formattedFeedback}</p>
+          </div>
+        </div>
+      `;
+      
+      // Trigger MathJax re-rendering for the new AI content
+      setTimeout(() => {
+        if (typeof MathJax !== 'undefined' && MathJax.Hub) {
+          // MathJax v2
+          MathJax.Hub.Queue(["Typeset", MathJax.Hub, aiFeedback]);
+        } else if (typeof MathJax !== 'undefined' && MathJax.typesetPromise) {
+          // MathJax v3
+          MathJax.typesetPromise([aiFeedback]).catch((err) => console.log('MathJax typeset failed: ' + err.message));
+        } else if (typeof MathJax !== 'undefined') {
+          // Fallback - try to reprocess the entire document
+          MathJax.Hub.Reprocess(aiFeedback);
+        }
+        console.log('MathJax re-rendering triggered for AI feedback');
+      }, 100); // Small delay to ensure DOM is updated
+    } else {
+      throw new Error(aiData.error || 'AI service returned an error');
+    }
+  } catch (error) {
+    console.error('AI feedback error:', error);
+    const aiFeedback = document.getElementById(`${qprefix}ai_feedback`);
+    if (aiFeedback) {
+      aiFeedback.innerHTML = '<div class="ai-error">AI feedback temporarily unavailable. Please try again later.</div>';
+    }
+  }
+}
+
 // Submit answers.
 function answer(qfile, qname, qprefix, seed) {
   const http = new XMLHttpRequest();
@@ -265,15 +456,22 @@ function answer(qfile, qname, qprefix, seed) {
         const maxScore = json.scoreweights.total;
         const isCorrect = json.score >= 1.0;
         
+        // Mark question as attempted when user submits
+        if (typeof markQuestionAttempted === 'function') {
+          markQuestionAttempted();
+        }
+        
         document.getElementById(`${qprefix+'score'}`).innerText
             = finalScore.toFixed(2) + ' ' + stackstring["api_out_of"] + ' ' + maxScore;
         document.getElementById(`${qprefix+'stackapi_score'}`).style.display = 'block';
         document.getElementById(`${qprefix+'response_summary'}`).innerText = json.responsesummary;
         
+        // Collect answers for AI processing and database tracking
+        const answers = collectAnswer(qprefix);
+        
         // Create and update question attempt in database with results
         if (window.databaseTracking) {
           // Create attempt only when user submits (not on page load)
-          const answers = collectAnswer(qprefix);
           const attempt = await window.databaseTracking.createQuestionAttempt(qfile, qname, qprefix, seed);
           
           if (attempt) {
@@ -303,7 +501,28 @@ function answer(qfile, qname, qprefix, seed) {
         }
 
         // Show General feedback and correct answers, hide summary
-        document.getElementById(`${qprefix+'stackapi_generalfeedback'}`).style.display = 'block';
+        console.log('📋 Displaying general feedback after submission...');
+        
+        // Add delay to ensure all elements are ready
+        setTimeout(() => {
+          const generalFeedbackElement = document.getElementById(`${qprefix+'stackapi_generalfeedback'}`);
+          const generalFeedbackContent = document.getElementById(`${qprefix+'generalfeedback'}`);
+          
+          if (generalFeedbackElement && generalFeedbackContent) {
+            // Check if there's actual content to show
+            if (generalFeedbackContent.innerHTML.trim() !== '') {
+              generalFeedbackElement.style.display = 'block';
+              console.log('✅ General feedback displayed with content');
+            } else {
+              console.log('⚠️ General feedback element exists but has no content');
+            }
+          } else {
+            console.error('❌ General feedback elements not found:', {
+              container: !!generalFeedbackElement,
+              content: !!generalFeedbackContent
+            });
+          }
+        }, 200);
 
         document.getElementById(`${qprefix+'stackapi_summary'}`).style.display = 'none';
 
@@ -342,7 +561,17 @@ function answer(qfile, qname, qprefix, seed) {
           }
         }
         createIframes(json.iframes);
-        MathJax.Hub.Queue(["Typeset", MathJax.Hub]);
+        
+        // Ensure MathJax renders general feedback properly with longer delay
+        setTimeout(() => {
+          if (typeof MathJax !== 'undefined' && MathJax.Hub) {
+            MathJax.Hub.Queue(["Typeset", MathJax.Hub]);
+            console.log('🔢 MathJax re-rendering triggered for general feedback');
+          }
+        }, 300);
+
+        // Call AI feedback service after all feedback is displayed
+        await callAIFeedback(qprefix, answers, json, qname, finalScore, maxScore, isCorrect);
       }
       catch(e) {
         console.log(e);
@@ -357,6 +586,12 @@ function answer(qfile, qname, qprefix, seed) {
   specificFeedbackElement.classList.remove('feedback');
   document.getElementById(`${qprefix+'response_summary'}`).innerText = "";
   document.getElementById(`${qprefix+'stackapi_summary'}`).style.display = 'none';
+  
+  // Clear previous AI feedback
+  const aiSection = document.getElementById(`${qprefix}ai_feedback_section`);
+  const aiFeedback = document.getElementById(`${qprefix}ai_feedback`);
+  if (aiSection) aiSection.style.display = 'none';
+  if (aiFeedback) aiFeedback.innerHTML = "";
   const inputElements = document.querySelectorAll(`[name^=${qprefix+feedbackPrefix}]`);
   for (const inputElement of Object.values(inputElements)) {
     inputElement.innerHTML = "";
@@ -366,6 +601,7 @@ function answer(qfile, qname, qprefix, seed) {
   document.getElementById(`${qprefix+'stackapi_validity'}`).innerText = '';
   collectData(qfile, qname, qprefix).then((data) => {
     data.seed = seed;
+    console.log('Question data before sending:', { qfile, qname, qprefix, seed });
     http.send(JSON.stringify(data));
   });
 }
@@ -491,6 +727,10 @@ function createQuestionBlocks() {
                           <h2>${stackstring['api_correct']}:</h2>
                           <div id=${questionPrefix + "formatcorrectresponse"} class="feedback"></div>
                         </div>
+                        <div id=${questionPrefix + "ai_feedback_section"} class="col-lg-10" style="display: none">
+                          <h2>🤖 AI Tutor Feedback:</h2>
+                          <div id=${questionPrefix + "ai_feedback"} class="feedback ai-response"></div>
+                        </div>
                     </div>
                     <div id=${questionPrefix + "newquestionbutton"}>
                       <input type="button" onclick="send('${qfile}', '${qname}', '${questionPrefix}')" class="btn btn-primary" value="Show new example question"/>
@@ -512,6 +752,12 @@ function collapseFunc(e){
 }
 
 function stackSetup(){
+  // Skip automatic question creation in navigation mode
+  // Navigation system will handle question loading
+  if (typeof initializeNavigation === 'function') {
+    console.log('Navigation mode enabled - skipping automatic question setup');
+    return;
+  }
   createQuestionBlocks();
   addCollapsibles();
 }
