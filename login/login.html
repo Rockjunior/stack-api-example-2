@@ -22,6 +22,9 @@
                     <input type="password" id="loginPassword" name="password" required>
                 </div>
                 <button type="submit" id="loginBtn">Login</button>
+                <div id="loginFormError" class="error-message" style="display: none;"></div>
+                <div id="loginFormSuccess" class="success-message" style="display: none;"></div>
+                <div id="loginFormLoading" class="loading-message" style="display: none;"></div>
                 <p class="switch-form">Don't have an account? <a href="#" id="showRegister">Register here</a></p>
             </form>
         </div>
@@ -53,6 +56,9 @@
                     <input type="password" id="confirmPassword" name="confirmPassword" required>
                 </div>
                 <button type="submit" id="registerBtn">Register</button>
+                <div id="registerFormError" class="error-message" style="display: none;"></div>
+                <div id="registerFormSuccess" class="success-message" style="display: none;"></div>
+                <div id="registerFormLoading" class="loading-message" style="display: none;"></div>
                 <p class="switch-form">Already have an account? <a href="#" id="showLogin">Login here</a></p>
             </form>
         </div>
@@ -73,8 +79,8 @@
         </div>
     </div>
 
-    <!-- Configuration Script (Replace with your Supabase credentials) -->
-    <script src="config.js"></script>
-    <script src="supabase-script.js"></script>
+    <!-- Authentication Scripts -->
+    <script type="module" src="../js/auth.js"></script>
+    <script type="module" src="enhanced-script.js"></script>
 </body>
 </html> 
