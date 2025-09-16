@@ -10,6 +10,7 @@ services:
       - ./index.html:/usr/share/nginx/html/index.html
       - ./js:/usr/share/nginx/html/js
       - ./questions:/usr/share/nginx/html/questions
+      - ./login:/usr/share/nginx/html/login
   maxima:
     image: mathinstitut/goemaxima:2024072400-latest
     tmpfs:

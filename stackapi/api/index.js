@@ -22,6 +22,7 @@ app.use((req, res, next) => {
 // --- Supabase setup ---
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY; // use service role key for writes
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY; // for client-side auth
 
 // Add connection validation
 if (!supabaseUrl || !supabaseKey) {
@@ -30,6 +31,29 @@ if (!supabaseUrl || !supabaseKey) {
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey);
+
+// Middleware to authenticate user from JWT token
+const authenticateUser = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Authorization token required' });
+    }
+
+    const token = authHeader.substring(7);
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    
+    if (error || !user) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+
+    req.user = user;
+    next();
+  } catch (error) {
+    console.error('Authentication error:', error);
+    return res.status(401).json({ error: 'Authentication failed' });
+  }
+};
 
 // Test database connection
 async function testConnection() {
@@ -45,17 +69,178 @@ async function testConnection() {
 testConnection();
 
 // -------------------------
-// 1. Start a learning session
+// Authentication Endpoints
 // -------------------------
-app.post("/session/start", async (req, res) => {
+
+// Sign up endpoint
+app.post("/auth/signup", async (req, res) => {
     try {
-        const { page_url, anonymous_id } = req.body;
+        const { email, password, firstName, lastName } = req.body;
+
+        if (!email || !password || !firstName || !lastName) {
+            return res.status(400).json({ error: 'All fields are required' });
+        }
+
+        // Create user with Supabase Auth
+        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+            email,
+            password,
+            email_confirm: true // Auto-confirm for simplicity, you might want to require email confirmation
+        });
+
+        if (authError) {
+            return res.status(400).json({ error: authError.message });
+        }
+
+        // Create user profile
+        const { data: profileData, error: profileError } = await supabase
+            .from('user_profiles')
+            .insert({
+                id: authData.user.id,
+                email,
+                first_name: firstName,
+                last_name: lastName
+            })
+            .select()
+            .single();
+
+        if (profileError) {
+            console.error('Profile creation error:', profileError);
+            // User was created but profile failed - this should be handled by the trigger
+        }
+
+        res.json({
+            message: 'User created successfully',
+            user: {
+                id: authData.user.id,
+                email: authData.user.email,
+                firstName,
+                lastName
+            }
+        });
+
+    } catch (error) {
+        console.error('Signup error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Sign in endpoint
+app.post("/auth/signin", async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({ error: 'Email and password are required' });
+        }
+
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password
+        });
+
+        if (error) {
+            return res.status(401).json({ error: error.message });
+        }
+
+        // Get user profile
+        const { data: profile, error: profileError } = await supabase
+            .from('user_profiles')
+            .select('*')
+            .eq('id', data.user.id)
+            .single();
+
+        res.json({
+            message: 'Sign in successful',
+            user: data.user,
+            profile: profile,
+            session: data.session
+        });
+
+    } catch (error) {
+        console.error('Signin error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Get user profile endpoint
+app.get("/auth/profile", authenticateUser, async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('user_profiles')
+            .select('*')
+            .eq('id', req.user.id)
+            .single();
+
+        if (error) {
+            return res.status(404).json({ error: 'Profile not found' });
+        }
+
+        res.json({ profile: data });
+
+    } catch (error) {
+        console.error('Profile fetch error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Update user profile endpoint
+app.put("/auth/profile", authenticateUser, async (req, res) => {
+    try {
+        const { first_name, last_name } = req.body;
+        
+        const { data, error } = await supabase
+            .from('user_profiles')
+            .update({ 
+                first_name, 
+                last_name,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', req.user.id)
+            .select()
+            .single();
+
+        if (error) {
+            return res.status(400).json({ error: error.message });
+        }
+
+        res.json({ 
+            message: 'Profile updated successfully',
+            profile: data 
+        });
+
+    } catch (error) {
+        console.error('Profile update error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Sign out endpoint (client-side handles token removal)
+app.post("/auth/signout", authenticateUser, async (req, res) => {
+    try {
+        // With JWT tokens, signout is primarily handled client-side
+        // But we can log the signout event or perform cleanup here
+        res.json({ message: 'Signed out successfully' });
+    } catch (error) {
+        console.error('Signout error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// -------------------------
+// Protected Learning Session Endpoints
+// -------------------------
+// 1. Start a learning session
+app.post("/session/start", authenticateUser, async (req, res) => {
+    try {
+        const { page_url } = req.body;
         const user_agent = req.headers["user-agent"];
+        const user_id = req.user.id;
 
         const { data, error } = await supabase
             .from("learning_sessions")
             .insert([
-                { page_url, anonymous_id, user_agent }
+                { page_url, user_id, user_agent }
             ])
             .select()
             .single();
@@ -67,10 +252,8 @@ app.post("/session/start", async (req, res) => {
     }
 });
 
-// -------------------------
 // 2. Record a question attempt
-// -------------------------
-app.post("/attempt", async (req, res) => {
+app.post("/attempt", authenticateUser, async (req, res) => {
     try {
         const {
             session_id,
@@ -82,12 +265,14 @@ app.post("/attempt", async (req, res) => {
             max_score,
             is_correct
         } = req.body;
+        const user_id = req.user.id;
 
         const { data, error } = await supabase
             .from("question_attempts")
             .insert([
                 {
                     session_id,
+                    user_id,
                     question_file,
                     question_name,
                     question_prefix,
@@ -107,10 +292,8 @@ app.post("/attempt", async (req, res) => {
     }
 });
 
-// -------------------------
 // 3. Track inputs
-// -------------------------
-app.post("/input", async (req, res) => {
+app.post("/input", authenticateUser, async (req, res) => {
     try {
         const {
             attempt_id,
@@ -121,6 +304,7 @@ app.post("/input", async (req, res) => {
             is_final_answer,
             validation_result
         } = req.body;
+        const user_id = req.user.id;
 
         console.log('🔍 Input tracking request:', {
             attempt_id,
@@ -138,6 +322,7 @@ app.post("/input", async (req, res) => {
                 {
                     attempt_id,
                     session_id,
+                    user_id,
                     input_name,
                     input_value,
                     input_type,
@@ -165,9 +350,7 @@ app.post("/input", async (req, res) => {
 const aiCache = new Map();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-// -------------------------
 // 4. AI Feedback using ChatGPT
-// -------------------------
 app.post("/ai/feedback", async (req, res) => {
     try {
         const {
