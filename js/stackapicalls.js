@@ -456,9 +456,18 @@ function answer(qfile, qname, qprefix, seed) {
         const maxScore = json.scoreweights.total;
         const isCorrect = json.score >= 1.0;
         
-        // Mark question as attempted when user submits
+        // Mark question as attempted when user submits with result
         if (typeof markQuestionAttempted === 'function') {
-          markQuestionAttempted();
+          markQuestionAttempted(currentQuestionIndex, isCorrect, finalScore);
+        }
+        
+        // Disable submit button after submission
+        const submitButton = document.querySelector(`#${qprefix}stackapi_qtext .btn[value*="Submit"]`);
+        if (submitButton) {
+          submitButton.disabled = true;
+          submitButton.style.opacity = '0.6';
+          submitButton.style.cursor = 'not-allowed';
+          submitButton.value = 'Answer Submitted';
         }
         
         document.getElementById(`${qprefix+'score'}`).innerText
@@ -538,6 +547,15 @@ function answer(qfile, qname, qprefix, seed) {
           specificFeedbackElement.classList.add('feedback');
         } else {
           specificFeedbackElement.classList.remove('feedback');
+        }
+        
+        // Disable "Show new example question" button after question content loads
+        const showExampleButton = document.querySelector('input[value*="Show new example question"]');
+        if (showExampleButton && !showExampleButton.disabled) {
+          showExampleButton.disabled = true;
+          showExampleButton.style.opacity = '0.6';
+          showExampleButton.style.cursor = 'not-allowed';
+          showExampleButton.value = 'Question Loaded';
         }
         // Replace plots in tagged feedback and then display.
         for (let [name, fb] of Object.entries(feedback)) {
