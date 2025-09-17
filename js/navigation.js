@@ -3,43 +3,59 @@ let currentQuestionIndex = 0;
 let questionBlocks = [];
 let attemptedQuestions = new Set(); // Track which questions have been attempted
 let allQuestionsAttempted = false;
+let questionResults = new Map(); // Track pass/fail results for each question
+let adaptiveMode = false; // Track if we're in adaptive remediation mode
 
-// Question sequence definition
+// Question sequence definition with remediation support
 const questionSequence = [
   {
-    title: "Simple question",
+    title: "Partial Fraction Decomposition",
     qfile: "questions/Partial fraction decomposition.xml",
-    qname: ""
+    qname: "",
+    topic: "partial_fractions",
+    difficulty: "basic"
   },
   {
-    title: "Matrix input", 
-    qfile: "questions/input-sample-questions.xml",
-    qname: "Matrix"
+    title: "Parametric Equations: Question 1", 
+    qfile: "questions/Planes curves and Parametric Equations Question1.xml",
+    qname: "",
+    topic: "parametric_equations",
+    difficulty: "basic"
   },
   {
-    title: "Radio input",
-    qfile: "questions/input-sample-questions.xml", 
-    qname: "Radio"
+    title: "Parametric Equations: Question 2",
+    qfile: "questions/Planes curves and Parametric Equations Question2.xml", 
+    qname: "",
+    topic: "parametric_equations",
+    difficulty: "intermediate"
   },
   {
-    title: "Reveal block",
-    qfile: "questions/Reveal_block_example.xml",
-    qname: ""
+    title: "Parametric Equations: Question 3",
+    qfile: "questions/Planes curves and Parametric Equations Question3.xml",
+    qname: "",
+    topic: "parametric_equations",
+    difficulty: "intermediate"
   },
   {
-    title: "Plot",
-    qfile: "questions/Graphs of many to one functions.xml",
-    qname: ""
+    title: "Parametric Equations: Question 4",
+    qfile: "questions/Planes curves and Parametric Equations Question4.xml",
+    qname: "",
+    topic: "parametric_equations",
+    difficulty: "advanced"
   },
   {
-    title: "JSXGraph", 
-    qfile: "questions/JSXGraph-behat.xml",
-    qname: ""
+    title: "Parametric Equations: Question 5", 
+    qfile: "questions/Planes curves and Parametric Equations Question5.xml",
+    qname: "",
+    topic: "parametric_equations",
+    difficulty: "advanced"
   },
   {
-    title: "Parsons",
-    qfile: "questions/Parsons-examples.xml",
-    qname: "irrational-power-irrational (illustrates re-use of strings)"
+    title: "Parametric Equations: Question 6",
+    qfile: "questions/Planes curves and Parametric Equations Question6.xml",
+    qname: "",
+    topic: "parametric_equations",
+    difficulty: "advanced"
   }
 ];
 
@@ -75,12 +91,25 @@ function initializeNavigation() {
 function navigateQuestion(direction) {
     console.log(`🧭 Navigating ${direction > 0 ? 'forward' : 'backward'}...`);
     
-    const newIndex = currentQuestionIndex + direction;
+    let newIndex;
     
-    // Check if trying to go forward without attempting current question
-    if (direction > 0 && !canProceedToNext()) {
-        showAttemptWarning();
-        return;
+    if (direction > 0) {
+        // Check if trying to go forward without attempting current question
+        if (!canProceedToNext()) {
+            showAttemptWarning();
+            return;
+        }
+        
+        // Use smart next question selection for forward navigation
+        newIndex = getNextQuestionIndex();
+        
+        // Show adaptive mode indicator
+        if (adaptiveMode) {
+            showAdaptiveModeMessage();
+        }
+    } else {
+        // Backward navigation - normal sequential
+        newIndex = currentQuestionIndex + direction;
     }
     
     if (newIndex >= 0 && newIndex < questionSequence.length) {
@@ -157,12 +186,16 @@ function loadQuestion(index) {
         // Reinitialize STACK system for the new question
         createQuestionBlocks();
         
-        // Trigger MathJax rendering if available
-        if (typeof MathJax !== 'undefined' && MathJax.Hub) {
-            MathJax.Hub.Queue(["Typeset", MathJax.Hub, questionContent]);
-        }
-        
-        console.log(`✅ Question ${index + 1} loaded successfully`);
+        // Trigger MathJax re-rendering after question loads
+        setTimeout(() => {
+            if (typeof MathJax !== 'undefined' && MathJax.Hub) {
+                MathJax.Hub.Queue(["Typeset", MathJax.Hub, questionContent]);
+            }
+            
+            // Note: "Show new example question" button will be disabled when clicked, not on load
+            
+            console.log(`✅ Question ${index + 1} loaded successfully`);
+        }, 100);
     }, 100);
 }
 
@@ -201,10 +234,17 @@ function updateNavigationButtons() {
     }
 }
 
-// Mark question as attempted when user submits an answer
-function markQuestionAttempted(questionIndex = currentQuestionIndex) {
-    console.log(`✅ Question ${questionIndex + 1} marked as attempted`);
+// Mark question as attempted and record result
+function markQuestionAttempted(questionIndex = currentQuestionIndex, isCorrect = false, score = 0) {
+    console.log(`✅ Question ${questionIndex + 1} marked as attempted - ${isCorrect ? 'PASSED' : 'FAILED'}`);
     attemptedQuestions.add(questionIndex);
+    
+    // Record the result for adaptive navigation
+    questionResults.set(questionIndex, {
+        passed: isCorrect,
+        score: score,
+        timestamp: Date.now()
+    });
     
     // Check if all questions have been attempted
     if (attemptedQuestions.size === questionSequence.length) {
@@ -220,6 +260,74 @@ function markQuestionAttempted(questionIndex = currentQuestionIndex) {
     if (warningDiv) {
         warningDiv.style.display = 'none';
     }
+}
+
+// Show adaptive mode message when remediation is provided
+function showAdaptiveModeMessage() {
+    let adaptiveDiv = document.getElementById('adaptive-message');
+    if (!adaptiveDiv) {
+        adaptiveDiv = document.createElement('div');
+        adaptiveDiv.id = 'adaptive-message';
+        adaptiveDiv.className = 'adaptive-message';
+        document.getElementById('navigation-controls').appendChild(adaptiveDiv);
+    }
+    
+    adaptiveDiv.innerHTML = '🎯 Providing additional practice based on your previous answer';
+    adaptiveDiv.style.display = 'block';
+    
+    // Hide message after 4 seconds
+    setTimeout(() => {
+        adaptiveDiv.style.display = 'none';
+    }, 4000);
+}
+
+// Smart next question selection based on performance
+function getNextQuestionIndex() {
+    const currentResult = questionResults.get(currentQuestionIndex);
+    
+    // If current question was failed, provide remediation
+    if (currentResult && !currentResult.passed) {
+        console.log('🔄 Student failed current question, providing remediation...');
+        
+        const currentQuestion = questionSequence[currentQuestionIndex];
+        const remediationQuestion = findRemediationQuestion(currentQuestion);
+        
+        if (remediationQuestion !== null) {
+            adaptiveMode = true;
+            console.log(`📚 Remediation question selected: ${remediationQuestion + 1}`);
+            return remediationQuestion;
+        }
+    }
+    
+    // Normal progression - next question in sequence
+    adaptiveMode = false;
+    return currentQuestionIndex + 1;
+}
+
+// Find a remediation question for failed attempts
+function findRemediationQuestion(failedQuestion) {
+    // Look for questions with same topic but easier difficulty
+    const sameTopicQuestions = questionSequence
+        .map((q, index) => ({ ...q, index }))
+        .filter(q => 
+            q.topic === failedQuestion.topic && 
+            q.index !== currentQuestionIndex &&
+            !attemptedQuestions.has(q.index)
+        );
+    
+    // Prefer basic difficulty for remediation
+    const basicQuestions = sameTopicQuestions.filter(q => q.difficulty === 'basic');
+    if (basicQuestions.length > 0) {
+        return basicQuestions[0].index;
+    }
+    
+    // Fall back to any same-topic question not yet attempted
+    if (sameTopicQuestions.length > 0) {
+        return sameTopicQuestions[0].index;
+    }
+    
+    // If no same-topic questions available, repeat the same question with new seed
+    return currentQuestionIndex;
 }
 
 // Override the original createQuestionBlocks to work with single question
