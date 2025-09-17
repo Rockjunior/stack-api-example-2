@@ -17,8 +17,16 @@ document.addEventListener('DOMContentLoaded', function() {
     // Check if user is already logged in
     const currentUser = localStorage.getItem('currentUser');
     if (currentUser) {
-        const userData = JSON.parse(currentUser);
-        showSuccessMessage(userData);
+        try {
+            JSON.parse(currentUser);
+            // Already authenticated: go straight to main app to avoid loops
+            window.location.replace('/index.html');
+            return;
+        } catch (e) {
+            // Corrupt value: clear and stay on login
+            console.warn('Corrupt currentUser detected on login page. Clearing it.');
+            localStorage.removeItem('currentUser');
+        }
     }
 });
 
@@ -184,6 +192,13 @@ function showSuccessMessage(user) {
     registerForm.style.display = 'none';
     successMessage.style.display = 'block';
     welcomeText.textContent = `Hello, ${user.firstName} ${user.lastName}! You are successfully logged in.`;
+    // Auto-redirect to main application after 1.2 seconds, only when on login page
+    if (window.location.pathname.includes('/login/')) {
+        setTimeout(() => {
+            // Use replace to avoid adding extra history entries
+            window.location.replace('/index.html');
+        }, 1200);
+    }
 }
 
 // Utility functions
