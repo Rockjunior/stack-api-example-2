@@ -5,44 +5,61 @@
 let currentSession = null;
 let currentAttempts = {}; // Track attempts by question prefix
 
-// Check authentication status
-function checkAuthentication() {
-    if (!window.authManager || !window.authManager.isAuthenticated()) {
-        // Redirect to login if not authenticated
+// Get authenticated user identifier or redirect to login
+function getAuthenticatedUserId() {
+    const currentUser = localStorage.getItem('currentUser');
+    if (!currentUser) {
+        // Redirect to login if no authenticated user
         window.location.href = '/login/login.html';
-        return false;
+        return null;
     }
-    return true;
+    
+    try {
+        const userData = JSON.parse(currentUser);
+        return userData.id || userData.email; // Use user ID or email as identifier
+    } catch (error) {
+        console.error('Error parsing user data:', error);
+        window.location.href = '/login/login.html';
+        return null;
+    }
 }
 
 // Initialize database session when page loads
 async function initializeDatabaseSession() {
-    if (!checkAuthentication()) {
+    if (!window.supabase) {
+        console.warn('Supabase not configured - database tracking disabled');
         return null;
     }
 
     try {
-        // Make authenticated request to start session
-        const response = await window.authManager.makeAuthenticatedRequest('http://localhost:3000/session/start', {
-            method: 'POST',
-            body: JSON.stringify({
-                page_url: window.location.href
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+        const userId = getAuthenticatedUserId();
+        if (!userId) {
+            return null; // User will be redirected to login
         }
-
-        const result = await response.json();
         
-        if (result.success) {
-            currentSession = result.session.id;
-            console.log('Database session initialized:', currentSession);
-            return result.session;
-        } else {
-            throw new Error(result.error || 'Failed to initialize session');
+        // Create learning session with authenticated user
+        const { data, error } = await window.supabase
+            .from('learning_sessions')
+            .insert([
+                {
+                    page_url: window.location.href,
+                    user_agent: navigator.userAgent,
+                    user_id: userId,
+                    anonymous_id: null // No longer using anonymous IDs
+                }
+            ])
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error creating learning session:', error);
+            return null;
         }
+
+        currentSession = data.id; // Store only the UUID string
+        console.log('Database session initialized:', currentSession);
+        return data;
+
     } catch (error) {
         console.error('Database session initialization failed:', error);
         return null;
@@ -51,15 +68,15 @@ async function initializeDatabaseSession() {
 
 // Create question attempt record
 async function createQuestionAttempt(qfile, qname, qprefix, seed) {
-    if (!currentSession || !checkAuthentication()) {
+    if (!window.supabase || !currentSession) {
         console.warn('Database not available for question attempt tracking');
         return null;
     }
     
     try {
-        const response = await window.authManager.makeAuthenticatedRequest('http://localhost:3000/attempt', {
-            method: 'POST',
-            body: JSON.stringify({
+        const { data, error } = await window.supabase
+            .from('question_attempts')
+            .insert([{
                 session_id: currentSession,
                 question_file: qfile,
                 question_name: qname || '',
@@ -68,22 +85,15 @@ async function createQuestionAttempt(qfile, qname, qprefix, seed) {
                 score: null,
                 max_score: null,
                 is_correct: null
-            })
-        });
+            }])
+            .select()
+            .single();
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const result = await response.json();
+        if (error) throw error;
         
-        if (result.success) {
-            console.log('Question attempt created:', result.attempt.id);
-            currentAttempts[qprefix] = result.attempt.id;
-            return result.attempt.id;
-        } else {
-            throw new Error(result.error || 'Failed to create attempt');
-        }
+        console.log('Question attempt created:', data.id);
+        currentAttempts[qprefix] = data.id;
+        return data.id;
     } catch (error) {
         console.error('Error creating question attempt:', error);
         return null;
@@ -121,7 +131,7 @@ async function updateQuestionAttempt(qprefix, score, maxScore, isCorrect) {
 
 // Track input interactions
 async function trackInput(qprefix, inputName, inputValue, inputType, isFinalAnswer = false, validationResult = null) {
-    if (!currentSession || !checkAuthentication()) {
+    if (!window.supabase || !currentSession) {
         return null;
     }
 
@@ -132,34 +142,27 @@ async function trackInput(qprefix, inputName, inputValue, inputType, isFinalAnsw
     }
 
     try {
-        const attemptId = currentAttempts[qprefix];
+        const attempt = currentAttempts[qprefix];
         
-        // Make authenticated request to track input
-        const response = await window.authManager.makeAuthenticatedRequest('http://localhost:3000/input', {
-            method: 'POST',
-            body: JSON.stringify({
-                attempt_id: attemptId,
-                session_id: currentSession,
-                input_name: inputName,
-                input_value: inputValue,
-                input_type: inputType,
-                is_final_answer: isFinalAnswer,
-                validation_result: validationResult
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+        // Verify the attempt exists in database before tracking inputs
+        const { data: attemptExists } = await window.supabase
+            .from('question_attempts')
+            .select('id')
+            .eq('id', attempt)
+            .maybeSingle();
+            
+        if (!attemptExists) {
+            console.error('Attempt not found in database:', attempt);
+            return null;
         }
-
-        const result = await response.json();
         
-        if (result.success) {
-            console.log('Input tracked:', result.input.id);
-            return result.input;
-        } else {
-            throw new Error(result.error || 'Failed to track input');
+        // For final answers, consolidate all related inputs into one record
+        if (isFinalAnswer) {
+            return await trackConsolidatedInput(attempt, inputName, inputValue, inputType, validationResult);
         }
+        
+        // Skip regular input tracking - only track final answers
+        return null;
 
     } catch (error) {
         console.error('Input tracking failed:', error);
@@ -232,8 +235,8 @@ async function trackRegularInput(attempt, inputName, inputValue, inputType, vali
         .from('input_tracking')
         .insert([
             {
-                attempt_id: attempt.id,
-                session_id: currentSession.id,
+                attempt_id: attempt,
+                session_id: currentSession,
                 input_name: inputName,
                 input_value: inputValue,
                 input_type: inputType,
@@ -263,7 +266,7 @@ async function endDatabaseSession() {
             .update({
                 session_end: new Date().toISOString()
             })
-            .eq('id', currentSession.id);
+            .eq('id', currentSession);
 
         if (error) {
             console.error('Error ending session:', error);
@@ -305,4 +308,4 @@ window.databaseTracking = {
     trackInput,
     endDatabaseSession,
     getInputDetails
-}; 
+};
