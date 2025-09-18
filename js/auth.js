@@ -155,16 +155,23 @@ class AuthManager {
 
     handleRedirection(event, session) {
         const currentPath = window.location.pathname
-        
+        const hasLocalUser = !!localStorage.getItem('currentUser')
+
+        // If a local session exists, do not auto-redirect here.
+        if (hasLocalUser) {
+            return
+        }
+
         if (event === 'SIGNED_IN' && session) {
-            // Redirect to main app if on login page
+            // Redirect to main app if on login page or root
             if (currentPath.includes('login') || currentPath === '/') {
-                window.location.href = '/index.html'
+                window.location.replace('/index.html')
             }
         } else if (event === 'SIGNED_OUT') {
-            // Redirect to login if not already there
-            if (!currentPath.includes('login')) {
-                window.location.href = '/login/login.html'
+            // Avoid forcing redirects on SIGNED_OUT; pages handle guard logic.
+            // Only redirect if currently on root path
+            if (currentPath === '/' ) {
+                window.location.replace('/login/login.html')
             }
         }
     }
