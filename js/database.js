@@ -5,23 +5,26 @@
 let currentSession = null;
 let currentAttempts = {}; // Track attempts by question prefix
 
-// Get authenticated user identifier or redirect to login
+// Get authenticated user identifier without forcing redirects
 function getAuthenticatedUserId() {
+    // Prefer Supabase auth if available
+    if (window.authManager && window.authManager.currentUser) {
+        const supaUser = window.authManager.currentUser;
+        return supaUser.id || supaUser.email || null;
+    }
+
+    // Fallback to local session used by simple login
     const currentUser = localStorage.getItem('currentUser');
-    if (!currentUser) {
-        // Redirect to login if no authenticated user
-        window.location.href = '/login/login.html';
-        return null;
+    if (currentUser) {
+        try {
+            const userData = JSON.parse(currentUser);
+            return userData.id || userData.email || null;
+        } catch (error) {
+            console.error('Error parsing user data:', error);
+            return null;
+        }
     }
-    
-    try {
-        const userData = JSON.parse(currentUser);
-        return userData.id || userData.email; // Use user ID or email as identifier
-    } catch (error) {
-        console.error('Error parsing user data:', error);
-        window.location.href = '/login/login.html';
-        return null;
-    }
+    return null;
 }
 
 // Initialize database session when page loads

@@ -8,15 +8,35 @@ app.use(bodyParser.json());
 
 // Add CORS middleware
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
+  const allowedOrigins = [
+    'http://localhost:8080',
+    'http://127.0.0.1:8080'
+  ];
+  const requestOrigin = req.headers.origin;
+
+  if (requestOrigin && allowedOrigins.includes(requestOrigin)) {
+    res.header('Access-Control-Allow-Origin', requestOrigin);
+  } else {
+    res.header('Access-Control-Allow-Origin', '*');
+  }
+
+  res.header('Vary', 'Origin');
+  res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  
+
   if (req.method === 'OPTIONS') {
-    res.sendStatus(200);
-  } else {
-    next();
+    // Always succeed preflight
+    return res.status(204).end();
   }
+  next();
+});
+
+// Explicit OPTIONS handler for all routes (extra safety for some proxies)
+app.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  return res.status(204).end();
 });
 
 // --- Supabase setup ---
@@ -34,6 +54,10 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Middleware to authenticate user from JWT token
 const authenticateUser = async (req, res, next) => {
+  // Never authenticate preflight requests
+  if (req.method === 'OPTIONS') {
+    return next();
+  }
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -391,47 +415,71 @@ app.post("/ai/feedback", async (req, res) => {
         
         const systemPrompt = `You are an expert mathematics tutor providing detailed, contextual feedback to students. 
 
-CRITICAL: Always complete your thoughts and examples. Never cut off mid-sentence or leave examples incomplete. If you start an explanation or example, finish it completely within the response.
+        CRITICAL: Always complete your thoughts and examples. Never cut off mid-sentence or leave examples incomplete. If you start an explanation or example, finish it completely within the response.
 
-For INCORRECT answers, provide:
-**Assessment:** What specifically went wrong in their approach
-**Step-by-Step Solution:** Complete walkthrough showing the correct method for THIS specific problem
-**Key Concept:** The main mathematical principle they need to understand
-**Practice Tips:** Specific advice for mastering this type of problem
+        For INCORRECT answers, provide:
+        **Assessment:** What specifically went wrong in their approach
+        **Step-by-Step Solution:** Complete walkthrough showing the correct method for THIS specific problem
+        **Key Concept:** The main mathematical principle they need to understand
+        **Practice Tips:** Specific advice for mastering this type of problem
 
-For CORRECT answers, provide:
-**Assessment:** Acknowledge their correct reasoning
-**Method Analysis:** Explain why their approach works mathematically
-**Alternative Approaches:** Other valid methods for this specific problem type
-**Next Level:** Related concepts or extensions they could explore
+        For CORRECT answers, provide:
+        **Assessment:** Acknowledge their correct reasoning
+        **Method Analysis:** Explain why their approach works mathematically
+        **Alternative Approaches:** Other valid methods for this specific problem type
+        **Next Level:** Related concepts or extensions they could explore
 
-Always:
-- Reference the specific mathematical content of the question
-- Use precise mathematical terminology
-- Provide concrete examples relevant to the problem type
-- Be encouraging but mathematically rigorous
-- Complete all examples and explanations within the response`;
+        Always:
+        - Reference the specific mathematical content of the question
+        - Use precise mathematical terminology
+        - Provide concrete examples relevant to the problem type
+        - Be encouraging but mathematically rigorous
+        - Complete all examples and explanations within the response`;
+
+        // TODO: Try this one.
+
+        // const systemPrompt = `You are an expert mathematics tutor who explains concepts to students in a clear, 
+        //     step-by-step way, just like a structured textbook or study guide.
+
+        //     CRITICAL: Responses must never exceed 400 words. Always keep answers complete but concise, 
+        //     so they do not get truncated.
+
+        //     For each problem:
+        //     1. Restate the original problem in simple words so the student understands the task.
+        //     2. Provide a clear, step-by-step solution written in a logical sequence. 
+        //     - Always finish the worked example. 
+        //     - Use equations, simplifications, and final answers explicitly.
+        //     3. Highlight the key concept the student should learn from this example. 
+        //     (e.g., "This is how partial fractions are used to rewrite a rational function.")
+        //     4. End with a short practice tip that helps the student apply the concept on their own.
+
+        //     Always:
+        //     - Write explanations as if the student is reading a math textbook (not as feedback about 
+        //     their performance).
+        //     - Use correct mathematical terminology and clear formatting.
+        //     - Be encouraging, but focused on the method.
+        //     - Ensure the solution and explanation fit fully within the 400-word limit.`;
 
         const contextInfo = `
-**Question Type:** ${questionType || 'Unknown'}
-**Additional Context:** ${additionalContext || 'None'}
-**General System Feedback:** ${generalFeedback || 'None'}`;
+            **Question Type:** ${questionType || 'Unknown'}
+            **Additional Context:** ${additionalContext || 'None'}
+            **General System Feedback:** ${generalFeedback || 'None'}`;
 
         const message = `Analyze this specific mathematical problem and provide targeted educational feedback:
 
-**Question:** ${question}
-${contextInfo}
+            **Question:** ${question}
+            ${contextInfo}
 
-**Student's Answer:** ${userInput}
-**Expected Solution:** ${rightSolution}
-**Performance:** ${score}/${maxScore} (${isCorrect ? 'Correct' : 'Incorrect'})
+            **Student's Answer:** ${userInput}
+            **Expected Solution:** ${rightSolution}
+            **Performance:** ${score}/${maxScore} (${isCorrect ? 'Correct' : 'Incorrect'})
 
-${isCorrect ? 
-  'The student answered correctly. Explain their mathematical reasoning, show alternative solution methods for this specific problem type, and suggest related concepts they could explore.' : 
-  'The student answered incorrectly. Provide a complete step-by-step solution for this specific problem, identify what went wrong in their approach, explain the key mathematical concepts involved, and give targeted practice advice.'
-}
+            ${isCorrect ? 
+            'The student answered correctly. Explain their mathematical reasoning, show alternative solution methods for this specific problem type, and suggest related concepts they could explore.' : 
+            'The student answered incorrectly. Provide a complete step-by-step solution for this specific problem, identify what went wrong in their approach, explain the key mathematical concepts involved, and give targeted practice advice.'
+            }
 
-Focus on the specific mathematical content and problem-solving techniques relevant to this exact question.`;
+            Focus on the specific mathematical content and problem-solving techniques relevant to this exact question.`;
 
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',

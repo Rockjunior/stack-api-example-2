@@ -5,6 +5,7 @@
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
   <title>Minimal STACK API example</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' ry='12' fill='%23007bff'/%3E%3Ctext x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-family='Arial, sans-serif' font-size='28' fill='white'%3ES%3C/text%3E%3C/svg%3E" />
   <link rel="stylesheet" href="https://latex.vercel.app/style.min.css" />
   <!-- <link rel="stylesheet" href="styles.css" /> -->
   <style>
@@ -517,8 +518,21 @@ if (!initializeSupabase()) {
 <!-- <script src="js/jsxgraph.min.js" type="text/javascript"></script> -->
 <script type="text/javascript">
     async function docHasLoaded() {
-         // Check authentication first
-         if (!window.authManager || !window.authManager.isAuthenticated()) {
+         // Robust authentication check to prevent redirect ping-pong
+         const hasLocalUser = !!localStorage.getItem('currentUser');
+         const hasCachedSupabase = !!localStorage.getItem('supabase_session');
+
+         let hasSupabaseUser = !!(window.authManager && window.authManager.isAuthenticated());
+
+         // If authManager not yet initialized, try Supabase client directly
+         if (!hasSupabaseUser && typeof window.supabase !== 'undefined' && window.supabase.auth) {
+             try {
+                 const { data: { session } } = await window.supabase.auth.getSession();
+                 hasSupabaseUser = !!session;
+             } catch (_) {}
+         }
+
+         if (!hasSupabaseUser && !hasLocalUser && !hasCachedSupabase) {
              window.location.href = '/login/login.html';
              return;
          }
@@ -538,7 +552,10 @@ if (!initializeSupabase()) {
 
     async function showUserInfo() {
         try {
-            const user = window.authManager.currentUser;
+            const supaUser = window.authManager && window.authManager.currentUser;
+            const localUserRaw = localStorage.getItem('currentUser');
+            const localUser = localUserRaw ? JSON.parse(localUserRaw) : null;
+            const user = supaUser || localUser;
             if (user) {
                 // Add user info to header
                 const header = document.querySelector('#title-block-header');
@@ -546,10 +563,17 @@ if (!initializeSupabase()) {
                     const userInfo = document.createElement('div');
                     userInfo.style.cssText = 'text-align: right; margin-bottom: 10px; font-size: 0.9em; color: #666;';
                     
-                    const profileResult = await window.authManager.getUserProfile();
-                    const userName = profileResult.success && profileResult.data ? 
-                        profileResult.data.full_name || `${profileResult.data.first_name} ${profileResult.data.last_name}`.trim() || user.email :
-                        user.email;
+                    let userName = '';
+                    if (supaUser && window.authManager && window.authManager.getUserProfile) {
+                        try {
+                            const profileResult = await window.authManager.getUserProfile();
+                            userName = (profileResult.success && profileResult.data && (profileResult.data.full_name || `${profileResult.data.first_name || ''} ${profileResult.data.last_name || ''}`.trim())) || supaUser.email || '';
+                        } catch (_) {
+                            userName = (supaUser && (supaUser.email || 'User')) || '';
+                        }
+                    } else if (localUser) {
+                        userName = `${localUser.firstName || ''} ${localUser.lastName || ''}`.trim() || localUser.email || 'User';
+                    }
                     
                     userInfo.innerHTML = `
                         <span>Welcome, ${userName}</span>
@@ -565,7 +589,14 @@ if (!initializeSupabase()) {
 
     async function handleLogout() {
         if (confirm('Are you sure you want to logout?')) {
-            await window.authManager.signOut();
+            // Try Supabase sign out if available
+            if (window.authManager && window.authManager.signOut) {
+                try { await window.authManager.signOut(); } catch (_) {}
+            }
+            // Clear local session fallback
+            localStorage.removeItem('currentUser');
+            // Redirect to login
+            window.location.href = '/login/login.html';
         }
     }
 </script>
