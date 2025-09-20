@@ -105,46 +105,69 @@ app.post("/auth/signup", async (req, res) => {
             return res.status(400).json({ error: 'All fields are required' });
         }
 
-        // Create user with Supabase Auth
+        // Create user with Supabase Auth including metadata
         const { data: authData, error: authError } = await supabase.auth.admin.createUser({
             email,
             password,
-            email_confirm: true // Auto-confirm for simplicity, you might want to require email confirmation
+            email_confirm: true, // Auto-confirm for simplicity
+            user_metadata: {
+                first_name: firstName,
+                last_name: lastName,
+                full_name: `${firstName} ${lastName}`
+            }
         });
 
         if (authError) {
             return res.status(400).json({ error: authError.message });
         }
 
-        // Create user profile
+        // Extract user metadata (fallback to req.body if metadata is missing)
+        const userMetadata = authData.user.user_metadata || {};
+        const userFirstName = userMetadata.first_name || firstName;
+        const userLastName = userMetadata.last_name || lastName;
+        const userFullName = userMetadata.full_name || `${userFirstName} ${userLastName}`;
+
+        console.log('📝 Creating user profile with data:', {
+            id: authData.user.id,
+            email: authData.user.email,
+            first_name: userFirstName,
+            last_name: userLastName,
+            full_name: userFullName
+        });
+
+        // Create user profile with proper data (exclude full_name as it's generated)
         const { data: profileData, error: profileError } = await supabase
             .from('user_profiles')
             .insert({
                 id: authData.user.id,
-                email,
-                first_name: firstName,
-                last_name: lastName
+                email: authData.user.email,
+                first_name: userFirstName,
+                last_name: userLastName
             })
             .select()
             .single();
 
         if (profileError) {
-            console.error('Profile creation error:', profileError);
+            console.error('❌ Profile creation error:', profileError);
             // User was created but profile failed - this should be handled by the trigger
+            return res.status(500).json({ error: 'Failed to create user profile' });
         }
+
+        console.log('✅ User profile created successfully:', profileData);
 
         res.json({
             message: 'User created successfully',
             user: {
                 id: authData.user.id,
                 email: authData.user.email,
-                firstName,
-                lastName
+                firstName: userFirstName,
+                lastName: userLastName,
+                fullName: userFullName
             }
         });
 
     } catch (error) {
-        console.error('Signup error:', error);
+        console.error('❌ Signup error:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
@@ -312,6 +335,47 @@ app.post("/attempt", authenticateUser, async (req, res) => {
         if (error) throw error;
         res.json({ success: true, attempt: data });
     } catch (err) {
+        res.status(400).json({ success: false, error: err.message });
+    }
+});
+
+// Update question attempt endpoint
+app.put("/attempt/:attemptId", authenticateUser, async (req, res) => {
+    try {
+        const { attemptId } = req.params;
+        const { score, max_score, is_correct } = req.body;
+        const user_id = req.user.id;
+
+        console.log('📊 Updating attempt:', {
+            attemptId,
+            score,
+            max_score,
+            is_correct,
+            user_id
+        });
+
+        const { data, error } = await supabase
+            .from("question_attempts")
+            .update({
+                submitted_at: new Date().toISOString(),
+                score,
+                max_score,
+                is_correct
+            })
+            .eq('id', attemptId)
+            .eq('user_id', user_id) // Ensure user can only update their own attempts
+            .select()
+            .single();
+
+        if (error) {
+            console.error('❌ Attempt update error:', error);
+            throw error;
+        }
+
+        console.log('✅ Attempt updated successfully:', data);
+        res.json({ success: true, attempt: data });
+    } catch (err) {
+        console.error('❌ Attempt update failed:', err.message);
         res.status(400).json({ success: false, error: err.message });
     }
 });
@@ -546,6 +610,275 @@ app.post("/ai/feedback", async (req, res) => {
             feedback: fallbackResponse,
             fallback: true 
         });
+    }
+});
+
+// -------------------------
+// Database Query Endpoints for Debugging
+// -------------------------
+
+// Get all learning sessions (simple query)
+app.get("/debug/sessions", async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('learning_sessions')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(20);
+
+        if (error) throw error;
+        res.json({ success: true, sessions: data, count: data.length });
+    } catch (err) {
+        res.status(400).json({ success: false, error: err.message });
+    }
+});
+
+// Get all user profiles
+app.get("/debug/users", async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('user_profiles')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        res.json({ success: true, users: data, count: data.length });
+    } catch (err) {
+        res.status(400).json({ success: false, error: err.message });
+    }
+});
+
+// Get all question attempts (simple query)
+app.get("/debug/attempts", async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('question_attempts')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(20);
+
+        if (error) throw error;
+        res.json({ success: true, attempts: data, count: data.length });
+    } catch (err) {
+        res.status(400).json({ success: false, error: err.message });
+    }
+});
+
+// Get all input tracking (simple query)
+app.get("/debug/inputs", async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('input_tracking')
+            .select('*')
+            .limit(20);
+
+        if (error) throw error;
+        res.json({ success: true, inputs: data, count: data.length });
+    } catch (err) {
+        res.status(400).json({ success: false, error: err.message });
+    }
+});
+
+// Get detailed view of a specific session and all related data
+app.get("/debug/session/:sessionId", async (req, res) => {
+    try {
+        const { sessionId } = req.params;
+        
+        // Get session details
+        const { data: session, error: sessionError } = await supabase
+            .from('learning_sessions')
+            .select(`
+                *,
+                user_profiles(email, first_name, last_name)
+            `)
+            .eq('id', sessionId)
+            .single();
+
+        if (sessionError) throw sessionError;
+
+        // Get all attempts for this session
+        const { data: attempts, error: attemptsError } = await supabase
+            .from('question_attempts')
+            .select('*')
+            .eq('session_id', sessionId)
+            .order('created_at', { ascending: false });
+
+        if (attemptsError) throw attemptsError;
+
+        // Get all inputs for this session
+        const { data: inputs, error: inputsError } = await supabase
+            .from('input_tracking')
+            .select('*')
+            .eq('session_id', sessionId)
+            .order('created_at', { ascending: false });
+
+        if (inputsError) throw inputsError;
+
+        res.json({ 
+            success: true, 
+            session, 
+            attempts, 
+            inputs,
+            summary: {
+                total_attempts: attempts.length,
+                total_inputs: inputs.length,
+                completed_attempts: attempts.filter(a => a.score !== null).length,
+                final_answers: inputs.filter(i => i.is_final_answer).length
+            }
+        });
+    } catch (err) {
+        res.status(400).json({ success: false, error: err.message });
+    }
+});
+
+// Get database schema info
+app.get("/debug/schema", async (req, res) => {
+    try {
+        // Get table info for our main tables
+        const tables = ['learning_sessions', 'question_attempts', 'input_tracking', 'user_profiles'];
+        const schema = {};
+
+        for (const table of tables) {
+            const { data, error } = await supabase
+                .from(table)
+                .select('*')
+                .limit(1);
+            
+            if (!error && data.length > 0) {
+                schema[table] = {
+                    columns: Object.keys(data[0]),
+                    sample_record: data[0]
+                };
+            } else {
+                schema[table] = { columns: [], sample_record: null, error: error?.message };
+            }
+        }
+
+        res.json({ success: true, schema });
+    } catch (err) {
+        res.status(400).json({ success: false, error: err.message });
+    }
+});
+
+// Get incomplete question attempts (started but not submitted)
+app.get("/debug/incomplete-attempts", async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('question_attempts')
+            .select('*')
+            .is('submitted_at', null)
+            .order('started_at', { ascending: false })
+            .limit(50);
+
+        if (error) throw error;
+
+        res.json({ 
+            success: true, 
+            incomplete_attempts: data, 
+            count: data.length,
+            message: `Found ${data.length} incomplete attempts (started but not submitted)`
+        });
+    } catch (err) {
+        res.status(400).json({ success: false, error: err.message });
+    }
+});
+
+// Get completion statistics
+app.get("/debug/stats", async (req, res) => {
+    try {
+        // Get total attempts
+        const { count: totalAttempts } = await supabase
+            .from('question_attempts')
+            .select('*', { count: 'exact', head: true });
+
+        // Get completed attempts
+        const { count: completedAttempts } = await supabase
+            .from('question_attempts')
+            .select('*', { count: 'exact', head: true })
+            .not('submitted_at', 'is', null);
+
+        // Get correct attempts
+        const { count: correctAttempts } = await supabase
+            .from('question_attempts')
+            .select('*', { count: 'exact', head: true })
+            .eq('is_correct', true);
+
+        const completionRate = totalAttempts > 0 ? (completedAttempts / totalAttempts * 100).toFixed(1) : 0;
+        const successRate = completedAttempts > 0 ? (correctAttempts / completedAttempts * 100).toFixed(1) : 0;
+
+        res.json({
+            success: true,
+            stats: {
+                total_attempts: totalAttempts,
+                completed_attempts: completedAttempts,
+                incomplete_attempts: totalAttempts - completedAttempts,
+                correct_attempts: correctAttempts,
+                completion_rate: `${completionRate}%`,
+                success_rate: `${successRate}%`
+            }
+        });
+    } catch (err) {
+        res.status(400).json({ success: false, error: err.message });
+    }
+});
+
+// Fix existing users with empty names
+app.post("/debug/fix-user-profiles", async (req, res) => {
+    try {
+        // Get all users with empty names
+        const { data: emptyProfiles, error: fetchError } = await supabase
+            .from('user_profiles')
+            .select('*')
+            .or('first_name.eq.,last_name.eq.,full_name.eq. ');
+
+        if (fetchError) throw fetchError;
+
+        console.log('🔍 Found users with empty names:', emptyProfiles.length);
+
+        const fixes = [];
+        for (const profile of emptyProfiles) {
+            // Try to get user metadata from auth
+            const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(profile.id);
+            
+            if (authError) {
+                console.error(`❌ Could not fetch auth data for user ${profile.id}:`, authError);
+                continue;
+            }
+
+            const userMetadata = authUser.user?.user_metadata || {};
+            const firstName = userMetadata.first_name || 'User';
+            const lastName = userMetadata.last_name || profile.email.split('@')[0];
+            const fullName = userMetadata.full_name || `${firstName} ${lastName}`;
+
+            // Update the profile (exclude full_name as it's a generated column)
+            const { data: updatedProfile, error: updateError } = await supabase
+                .from('user_profiles')
+                .update({
+                    first_name: firstName,
+                    last_name: lastName,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', profile.id)
+                .select()
+                .single();
+
+            if (updateError) {
+                console.error(`❌ Failed to update profile for user ${profile.id}:`, updateError);
+                fixes.push({ id: profile.id, status: 'failed', error: updateError.message });
+            } else {
+                console.log(`✅ Fixed profile for user ${profile.id}:`, updatedProfile);
+                fixes.push({ id: profile.id, status: 'success', data: updatedProfile });
+            }
+        }
+
+        res.json({ 
+            success: true, 
+            message: `Processed ${emptyProfiles.length} users`,
+            fixes 
+        });
+    } catch (err) {
+        console.error('❌ Fix user profiles error:', err);
+        res.status(400).json({ success: false, error: err.message });
     }
 });
 

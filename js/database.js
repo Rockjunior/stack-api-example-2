@@ -10,6 +10,7 @@ function getAuthenticatedUserId() {
     // Prefer Supabase auth if available
     if (window.authManager && window.authManager.currentUser) {
         const supaUser = window.authManager.currentUser;
+        console.log('🔐 Using Supabase auth user:', supaUser.id);
         return supaUser.id || supaUser.email || null;
     }
 
@@ -18,68 +19,77 @@ function getAuthenticatedUserId() {
     if (currentUser) {
         try {
             const userData = JSON.parse(currentUser);
+            console.log('🔐 Using localStorage user:', userData.id || userData.email);
             return userData.id || userData.email || null;
         } catch (error) {
-            console.error('Error parsing user data:', error);
+            console.error('❌ Error parsing user data:', error);
             return null;
         }
     }
+    
+    console.warn('⚠️ No authenticated user found - database tracking will be limited');
     return null;
 }
 
 // Initialize database session when page loads
 async function initializeDatabaseSession() {
-    if (!window.supabase) {
-        console.warn('Supabase not configured - database tracking disabled');
-        return null;
-    }
-
     try {
         const userId = getAuthenticatedUserId();
         if (!userId) {
-            return null; // User will be redirected to login
+            console.warn('⚠️ No authenticated user - database tracking disabled');
+            return null;
         }
         
-        // Create learning session with authenticated user
-        const { data, error } = await window.supabase
-            .from('learning_sessions')
-            .insert([
-                {
-                    page_url: window.location.href,
-                    user_agent: navigator.userAgent,
-                    user_id: userId,
-                    anonymous_id: null // No longer using anonymous IDs
-                }
-            ])
-            .select()
-            .single();
+        // Use authenticated API endpoint instead of direct Supabase client
+        const response = await fetch('http://localhost:3000/session/start', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${window.authManager?.getAccessToken() || ''}`
+            },
+            body: JSON.stringify({
+                page_url: window.location.href
+            })
+        });
 
-        if (error) {
-            console.error('Error creating learning session:', error);
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error('❌ Session creation failed:', errorData);
             return null;
         }
 
-        currentSession = data.id; // Store only the UUID string
-        console.log('Database session initialized:', currentSession);
-        return data;
+        const result = await response.json();
+        if (result.success) {
+            currentSession = result.session.id;
+            console.log('✅ Database session initialized:', currentSession);
+            return result.session;
+        } else {
+            console.error('❌ Session creation failed:', result.error);
+            return null;
+        }
 
     } catch (error) {
-        console.error('Database session initialization failed:', error);
+        console.error('❌ Database session initialization failed:', error);
         return null;
     }
 }
 
 // Create question attempt record
 async function createQuestionAttempt(qfile, qname, qprefix, seed) {
-    if (!window.supabase || !currentSession) {
-        console.warn('Database not available for question attempt tracking');
+    if (!currentSession) {
+        console.warn('⚠️ No active session - question attempt tracking disabled');
         return null;
     }
     
     try {
-        const { data, error } = await window.supabase
-            .from('question_attempts')
-            .insert([{
+        // Use authenticated API endpoint
+        const response = await fetch('http://localhost:3000/attempt', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${window.authManager?.getAccessToken() || ''}`
+            },
+            body: JSON.stringify({
                 session_id: currentSession,
                 question_file: qfile,
                 question_name: qname || '',
@@ -88,53 +98,86 @@ async function createQuestionAttempt(qfile, qname, qprefix, seed) {
                 score: null,
                 max_score: null,
                 is_correct: null
-            }])
-            .select()
-            .single();
+            })
+        });
 
-        if (error) throw error;
-        
-        console.log('Question attempt created:', data.id);
-        currentAttempts[qprefix] = data.id;
-        return data.id;
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error('❌ Question attempt creation failed:', errorData);
+            return null;
+        }
+
+        const result = await response.json();
+        if (result.success) {
+            console.log('✅ Question attempt created:', result.attempt.id);
+            currentAttempts[qprefix] = result.attempt.id;
+            return result.attempt.id;
+        } else {
+            console.error('❌ Question attempt creation failed:', result.error);
+            return null;
+        }
     } catch (error) {
-        console.error('Error creating question attempt:', error);
+        console.error('❌ Error creating question attempt:', error);
         return null;
     }
 }
 
 // Update question attempt with submission results
 async function updateQuestionAttempt(qprefix, score, maxScore, isCorrect) {
-    if (!window.supabase || !currentAttempts[qprefix]) {
-        console.warn('No question attempt to update for prefix:', qprefix);
+    if (!currentAttempts[qprefix]) {
+        console.warn('⚠️ No question attempt to update for prefix:', qprefix);
+        console.warn('Current attempts:', currentAttempts);
         return null;
     }
 
     try {
-        const { data, error } = await window.supabase
-            .from('question_attempts')
-            .update({
+        const attemptId = currentAttempts[qprefix];
+        console.log('📊 Updating question attempt:', {
+            attemptId,
+            qprefix,
+            score,
+            maxScore,
+            isCorrect
+        });
+
+        // Use authenticated API endpoint for updates
+        const response = await fetch(`http://localhost:3000/attempt/${attemptId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${window.authManager?.getAccessToken() || ''}`
+            },
+            body: JSON.stringify({
                 score: score,
                 max_score: maxScore,
                 is_correct: isCorrect
             })
-            .eq('id', currentAttempts[qprefix])
-            .select()
-            .single();
+        });
 
-        if (error) throw error;
-        
-        console.log('Question attempt updated:', data.id);
-        return data;
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error('❌ Question attempt update failed:', errorData);
+            return null;
+        }
+
+        const result = await response.json();
+        if (result.success) {
+            console.log('✅ Question attempt updated successfully:', result.attempt);
+            return result.attempt;
+        } else {
+            console.error('❌ Question attempt update failed:', result.error);
+            return null;
+        }
     } catch (error) {
-        console.error('Question attempt update failed:', error);
+        console.error('❌ Question attempt update failed:', error);
         return null;
     }
 }
 
 // Track input interactions
 async function trackInput(qprefix, inputName, inputValue, inputType, isFinalAnswer = false, validationResult = null) {
-    if (!window.supabase || !currentSession) {
+    if (!currentSession) {
+        console.warn('⚠️ No active session - input tracking disabled');
         return null;
     }
 
@@ -145,30 +188,52 @@ async function trackInput(qprefix, inputName, inputValue, inputType, isFinalAnsw
     }
 
     try {
-        const attempt = currentAttempts[qprefix];
+        const attemptId = currentAttempts[qprefix];
         
-        // Verify the attempt exists in database before tracking inputs
-        const { data: attemptExists } = await window.supabase
-            .from('question_attempts')
-            .select('id')
-            .eq('id', attempt)
-            .maybeSingle();
-            
-        if (!attemptExists) {
-            console.error('Attempt not found in database:', attempt);
+        console.log('📝 Tracking input:', {
+            qprefix,
+            attemptId,
+            inputName,
+            inputValue: inputValue?.substring(0, 100) + (inputValue?.length > 100 ? '...' : ''),
+            inputType,
+            isFinalAnswer
+        });
+        
+        // Use authenticated API endpoint for input tracking
+        const response = await fetch('http://localhost:3000/input', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${window.authManager?.getAccessToken() || ''}`
+            },
+            body: JSON.stringify({
+                attempt_id: attemptId,
+                session_id: currentSession,
+                input_name: inputName,
+                input_value: inputValue,
+                input_type: inputType,
+                is_final_answer: isFinalAnswer,
+                validation_result: validationResult
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error('❌ Input tracking failed:', errorData);
             return null;
         }
-        
-        // For final answers, consolidate all related inputs into one record
-        if (isFinalAnswer) {
-            return await trackConsolidatedInput(attempt, inputName, inputValue, inputType, validationResult);
+
+        const result = await response.json();
+        if (result.success) {
+            console.log('✅ Input tracked successfully:', result.input);
+            return result.input;
+        } else {
+            console.error('❌ Input tracking failed:', result.error);
+            return null;
         }
-        
-        // Skip regular input tracking - only track final answers
-        return null;
 
     } catch (error) {
-        console.error('Input tracking failed:', error);
+        console.error('❌ Input tracking failed:', error);
         return null;
     }
 }

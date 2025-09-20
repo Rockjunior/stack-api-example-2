@@ -113,9 +113,13 @@ function handleRegistration() {
         return;
     }
 
+    // Generate incremental ID
+    const maxId = existingUsers.length > 0 ? Math.max(...existingUsers.map(u => parseInt(u.id) || 0)) : 0;
+    const newId = maxId + 1;
+
     // Create new user
     const newUser = {
-        id: Date.now().toString(),
+        id: newId.toString(),
         firstName: firstName,
         lastName: lastName,
         email: email,
