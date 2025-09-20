@@ -186,9 +186,16 @@ function send(qfile, qname, qprefix) {
       }
     }
   };
-  collectData(qfile, qname, qprefix).then((data)=>{
+  collectData(qfile, qname, qprefix).then(async (data)=>{
     let submitbutton = document.getElementById(`${qprefix + 'stackapi_qtext'}`).querySelector('input[type="button"]');
     submitbutton.addEventListener('click', function() {answer(qfile, qname, qprefix, data.seed)});
+    
+    // Create question attempt immediately when question loads (not just on submission)
+    if (window.databaseTracking) {
+      console.log('📝 Creating question attempt on question load:', qprefix);
+      await window.databaseTracking.createQuestionAttempt(qfile, qname, qprefix, data.seed);
+    }
+    
     http.send(JSON.stringify(data));
     let questioncontainer = document.getElementById(`${qprefix+'stack'}`).parentElement;
     if (questioncontainer.getBoundingClientRect().top<0){
@@ -478,35 +485,41 @@ function answer(qfile, qname, qprefix, seed) {
         // Collect answers for AI processing and database tracking
         const answers = collectAnswer(qprefix);
         
-        // Create and update question attempt in database with results
+        // Update existing question attempt in database with results
         if (window.databaseTracking) {
-          // Create attempt only when user submits (not on page load)
-          const attempt = await window.databaseTracking.createQuestionAttempt(qfile, qname, qprefix, seed);
+          // Don't create new attempt - should already exist from question load
+          console.log('📊 Updating existing question attempt with results:', qprefix);
+          const updateResult = await window.databaseTracking.updateQuestionAttempt(qprefix, finalScore, maxScore, isCorrect);
           
-          if (attempt) {
-            await window.databaseTracking.updateQuestionAttempt(qprefix, finalScore, maxScore, isCorrect);
-            
-            // Track final answers with validation results
-            const consolidatedAnswers = JSON.stringify(answers);
-            
-            const validationResults = {
-              score: json.score,
-              maxScore: json.scoreweights?.total || 1,
-              isCorrect: json.score >= 1.0,
-              responseSummary: json.responsesummary,
-              specificFeedback: json.specificfeedback,
-              prts: json.prts
-            };
-            
-            await window.databaseTracking.trackInput(
-              qprefix, 
-              'final_answers', 
-              consolidatedAnswers, 
-              'final_submission', 
-              true, // is final answer
-              JSON.stringify(validationResults) // validation results
-            );
+          // If update failed, try creating a new attempt as fallback
+          if (!updateResult) {
+            console.warn('⚠️ Attempt update failed, creating new attempt as fallback');
+            const newAttempt = await window.databaseTracking.createQuestionAttempt(qfile, qname, qprefix, seed);
+            if (newAttempt) {
+              await window.databaseTracking.updateQuestionAttempt(qprefix, finalScore, maxScore, isCorrect);
+            }
           }
+          
+          // Track final answers with validation results
+          const consolidatedAnswers = JSON.stringify(answers);
+          
+          const validationResults = {
+            score: json.score,
+            maxScore: json.scoreweights?.total || 1,
+            isCorrect: json.score >= 1.0,
+            responseSummary: json.responsesummary,
+            specificFeedback: json.specificfeedback,
+            prts: json.prts
+          };
+          
+          await window.databaseTracking.trackInput(
+            qprefix, 
+            'final_answers', 
+            consolidatedAnswers, 
+            'final_submission', 
+            true, // is final answer
+            JSON.stringify(validationResults) // validation results
+          );
         }
 
         // Show General feedback and correct answers, hide summary
