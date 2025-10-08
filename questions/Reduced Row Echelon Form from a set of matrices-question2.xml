@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<quiz>
+<!-- question: 113682  -->
+  <question type="multichoice">
+    <name>
+      <text>Selecting matrices which are in Reduced Row Echelon Form from a set of matrices.</text>
+    </name>
+    <questiontext format="html">
+      <text><![CDATA[<p></p><p>Select the matrices that are in Reduced Row Echelon Form.</p>]]></text>
+    </questiontext>
+    <generalfeedback format="html">
+      <text></text>
+    </generalfeedback>
+    <defaultgrade>1</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <idnumber></idnumber>
+    <single>false</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>none</answernumbering>
+    <showstandardinstruction>1</showstandardinstruction>
+    <correctfeedback format="html">
+      <text>Your answer is correct.</text>
+    </correctfeedback>
+    <partiallycorrectfeedback format="html">
+      <text>Your answer is partially correct.</text>
+    </partiallycorrectfeedback>
+    <incorrectfeedback format="html">
+      <text>Your answer is incorrect.</text>
+    </incorrectfeedback>
+    <shownumcorrect/>
+    <answer fraction="50" format="html">
+      <text><![CDATA[<p>\(\pmatrix{1&amp;3&amp;0&amp;0\cr 0&amp;0&amp;1&amp;0\cr 0&amp;0&amp;0&amp;1\cr }\)<br></p>]]></text>
+      <feedback format="html">
+        <text><![CDATA[<p>This is in Reduced Row Echelon Form.</p>]]></text>
+      </feedback>
+    </answer>
+    <answer fraction="0" format="html">
+      <text><![CDATA[<p>\(\pmatrix{0&amp;0&amp;0&amp;0\cr 0&amp;1&amp;0&amp;1\cr 0&amp;0&amp;1&amp;0\cr }\)<br></p>]]></text>
+      <feedback format="html">
+        <text><![CDATA[<p>This is <b>not</b> in Reduced Row Echelon Form. Zero rows must be below non zero rows.<br></p>]]></text>
+      </feedback>
+    </answer>
+    <answer fraction="50" format="html">
+      <text><![CDATA[<p>\(\pmatrix{1&amp;-3&amp;0\cr 0&amp;0&amp;1\cr 0&amp;0&amp;0\cr }\)<br></p>]]></text>
+      <feedback format="html">
+        <text><![CDATA[<p>This is in Reduced Row Echelon Form.<br></p>]]></text>
+      </feedback>
+    </answer>
+    <answer fraction="0" format="html">
+      <text><![CDATA[<p>\(\pmatrix{3&amp;1&amp;-2&amp;1\cr 0&amp;0&amp;2&amp;1\cr 0&amp;0&amp;1&amp;0\cr }\)<br></p>]]></text>
+      <feedback format="html">
+        <text><![CDATA[<p>This is <b>not</b> in Reduced Row Echelon Form. The left most entry of the first row should be 1 but it is 3.<br></p>]]></text>
+      </feedback>
+    </answer>
+  </question>
+
+</quiz>

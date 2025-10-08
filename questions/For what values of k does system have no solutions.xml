@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<quiz>
+<!-- question: 125052  -->
+  <question type="stack">
+    <name>
+      <text>For what values of k does system have no solutions? (copy)</text>
+    </name>
+    <questiontext format="html">
+      <text><![CDATA[<p>For what value of \(k\) does \[ {@(lmxchar:".",S)@} \] have no solution? [[input:ans1]] [[validation:ans1]][[feedback:prt1]]</p>]]></text>
+    </questiontext>
+    <generalfeedback format="html">
+      <text><![CDATA[<h3>Worked Solution</h3>
+<p>The first step in a problem like this is to write the system of equations in matrix form \[ {@M1@}{@transpose([x,y,z])@} = {@M2@}\]</p><p>This has agumented matrix \[ {@ws1@}\]</p><p>We are trying to find \(k\) so that the equations are inconsistent, and hence there is no solution.</p><p>So, we look at the matrix, and multiply the second row by \({@ws2@}\) and then add the third row to the second to give</p><p>\[ {@ws3@}\]</p><p>Inspecting this, if \(k={@ta1@}\) then from the first two rows, we will have two equations with the same left hand side but equating to a different value on the right hand side, hence they can never be simultaneously true and we will have an inconsistent system.</p>]]></text>
+    </generalfeedback>
+    <defaultgrade>1</defaultgrade>
+    <penalty>0.1</penalty>
+    <hidden>0</hidden>
+    <idnumber></idnumber>
+    <stackversion>
+      <text>2023060500</text>
+    </stackversion>
+    <questionvariables>
+      <text><![CDATA[ordergreat(x,y,z,k)
+M1:matrix([2+rand(3),1,k],[1,0,1+rand(2)],[0,1,1]);
+M2:transpose(matrix([1+rand(3),1+rand(5),-2-rand(3)]));
+M3:M1.transpose([x,y,z]);
+S:zip_with("=",first(args(transpose(M3))),first(args(transpose(M2))));
+S:transpose(S);
+S1:determinant(M1);
+S2:solve(S1=0);
+ta1:rhs(first(S2));
+ws1:apply(matrix,zip_with(append,args(M1),args(M2)))
+ws2:ws1[1][1];
+ws3:matrix(ws1[1],ws2*ws1[2]+ws1[3],ws1[3]);]]></text>
+    </questionvariables>
+    <specificfeedback format="html">
+      <text></text>
+    </specificfeedback>
+    <questionnote format="moodle_auto_format">
+      <text><![CDATA[<p>For what value of \(k\) does \[ {@(lmxchar:".",S)@} \] have no solution? \({@ta1@}\)</p>]]></text>
+    </questionnote>
+    <questiondescription format="moodle_auto_format">
+      <text><![CDATA[<p id="author">Nixson Kiplagat</p>
+<p id="concept">N/A</p>
+<p id="reviewer">Godfrey Wabwire</p>
+<p id="reviewer">[Juma Zevick]</p>
+<p id="description">Given a system of equation, need to find the value of k such that the system has no solution</p>]]></text>
+    </questiondescription>
+    <questionsimplify>1</questionsimplify>
+    <assumepositive>0</assumepositive>
+    <assumereal>0</assumereal>
+    <prtcorrect format="html">
+      <text><![CDATA[<span style="font-size: 1.5em; color:green;"><i class="fa fa-check"></i></span> Correct answer, well done.]]></text>
+    </prtcorrect>
+    <prtpartiallycorrect format="html">
+      <text><![CDATA[<span style="font-size: 1.5em; color:orange;"><i class="fa fa-adjust"></i></span> Your answer is partially correct.]]></text>
+    </prtpartiallycorrect>
+    <prtincorrect format="html">
+      <text><![CDATA[<span style="font-size: 1.5em; color:red;"><i class="fa fa-times"></i></span> Incorrect answer.]]></text>
+    </prtincorrect>
+    <decimals>.</decimals>
+    <scientificnotation>*10</scientificnotation>
+    <multiplicationsign>none</multiplicationsign>
+    <sqrtsign>1</sqrtsign>
+    <complexno>i</complexno>
+    <inversetrig>cos-1</inversetrig>
+    <logicsymbol>lang</logicsymbol>
+    <matrixparens>[</matrixparens>
+    <isbroken>0</isbroken>
+    <variantsselectionseed></variantsselectionseed>
+    <input>
+      <name>ans1</name>
+      <type>numerical</type>
+      <tans>ta1</tans>
+      <boxsize>5</boxsize>
+      <strictsyntax>1</strictsyntax>
+      <insertstars>0</insertstars>
+      <syntaxhint></syntaxhint>
+      <syntaxattribute>0</syntaxattribute>
+      <forbidwords></forbidwords>
+      <allowwords></allowwords>
+      <forbidfloat>1</forbidfloat>
+      <requirelowestterms>1</requirelowestterms>
+      <checkanswertype>1</checkanswertype>
+      <mustverify>1</mustverify>
+      <showvalidation>3</showvalidation>
+      <options></options>
+    </input>
+    <prt>
+      <name>prt1</name>
+      <value>1.0000000</value>
+      <autosimplify>1</autosimplify>
+      <feedbackstyle>1</feedbackstyle>
+      <feedbackvariables>
+        <text>/*Node 1: Checks for the correct answer */</text>
+      </feedbackvariables>
+      <node>
+        <name>0</name>
+        <description>Checks for the correct answer</description>
+        <answertest>AlgEquiv</answertest>
+        <sans>ans1</sans>
+        <tans>ta1</tans>
+        <testoptions></testoptions>
+        <quiet>0</quiet>
+        <truescoremode>=</truescoremode>
+        <truescore>1</truescore>
+        <truepenalty></truepenalty>
+        <truenextnode>-1</truenextnode>
+        <trueanswernote>prt1-1-T</trueanswernote>
+        <truefeedback format="html">
+          <text></text>
+        </truefeedback>
+        <falsescoremode>=</falsescoremode>
+        <falsescore>0</falsescore>
+        <falsepenalty></falsepenalty>
+        <falsenextnode>-1</falsenextnode>
+        <falseanswernote>prt1-1-F</falseanswernote>
+        <falsefeedback format="html">
+          <text></text>
+        </falsefeedback>
+      </node>
+    </prt>
+    <deployedseed>339834539</deployedseed>
+    <deployedseed>724133205</deployedseed>
+    <deployedseed>215569862</deployedseed>
+    <deployedseed>2126619782</deployedseed>
+    <deployedseed>1939489071</deployedseed>
+    <deployedseed>346044160</deployedseed>
+    <deployedseed>1525712301</deployedseed>
+    <deployedseed>182962228</deployedseed>
+    <deployedseed>1878847058</deployedseed>
+    <deployedseed>1443810838</deployedseed>
+    <deployedseed>233927371</deployedseed>
+    <deployedseed>570647678</deployedseed>
+    <deployedseed>452093470</deployedseed>
+    <deployedseed>1331630816</deployedseed>
+    <deployedseed>2046260633</deployedseed>
+    <deployedseed>1791543090</deployedseed>
+    <deployedseed>965666781</deployedseed>
+    <deployedseed>1616787418</deployedseed>
+    <deployedseed>2044648893</deployedseed>
+    <deployedseed>798877954</deployedseed>
+    <deployedseed>1874436289</deployedseed>
+    <deployedseed>292039221</deployedseed>
+    <deployedseed>1782000134</deployedseed>
+    <deployedseed>1658043449</deployedseed>
+    <deployedseed>1745714349</deployedseed>
+    <deployedseed>631014733</deployedseed>
+    <deployedseed>1122177123</deployedseed>
+    <deployedseed>1913944454</deployedseed>
+    <deployedseed>798709764</deployedseed>
+    <deployedseed>1197878773</deployedseed>
+    <deployedseed>934155452</deployedseed>
+    <deployedseed>2137697478</deployedseed>
+    <deployedseed>936574199</deployedseed>
+    <deployedseed>818941839</deployedseed>
+    <deployedseed>1272911055</deployedseed>
+    <deployedseed>677756236</deployedseed>
+    <deployedseed>1857595313</deployedseed>
+    <deployedseed>151586574</deployedseed>
+    <deployedseed>1690484564</deployedseed>
+    <deployedseed>1873309480</deployedseed>
+    <deployedseed>1323112721</deployedseed>
+    <deployedseed>1099503078</deployedseed>
+    <deployedseed>119175431</deployedseed>
+    <deployedseed>703755061</deployedseed>
+    <deployedseed>366968181</deployedseed>
+    <deployedseed>1806701378</deployedseed>
+    <deployedseed>798868672</deployedseed>
+    <deployedseed>8965472</deployedseed>
+    <deployedseed>1335192525</deployedseed>
+    <deployedseed>109849708</deployedseed>
+    <deployedseed>1017627036</deployedseed>
+    <deployedseed>1002753187</deployedseed>
+    <deployedseed>2061139677</deployedseed>
+    <deployedseed>1732061363</deployedseed>
+    <deployedseed>1763092485</deployedseed>
+    <deployedseed>517310419</deployedseed>
+    <deployedseed>784480783</deployedseed>
+    <deployedseed>489097182</deployedseed>
+    <deployedseed>477597290</deployedseed>
+    <deployedseed>634857985</deployedseed>
+    <deployedseed>1758841190</deployedseed>
+    <deployedseed>1524422992</deployedseed>
+    <deployedseed>1611075396</deployedseed>
+    <deployedseed>563615638</deployedseed>
+    <deployedseed>1785173337</deployedseed>
+    <deployedseed>1522636503</deployedseed>
+    <deployedseed>491643008</deployedseed>
+    <qtest>
+      <testcase>1</testcase>
+      <description></description>
+      <testinput>
+        <name>ans1</name>
+        <value>ta1</value>
+      </testinput>
+      <expected>
+        <name>prt1</name>
+        <expectedscore>1.0000000</expectedscore>
+        <expectedpenalty>0.0000000</expectedpenalty>
+        <expectedanswernote>prt1-1-T</expectedanswernote>
+      </expected>
+    </qtest>
+    <qtest>
+      <testcase>2</testcase>
+      <description></description>
+      <testinput>
+        <name>ans1</name>
+        <value>ev(ta1-1,simp)</value>
+      </testinput>
+      <expected>
+        <name>prt1</name>
+        <expectedscore>0.0000000</expectedscore>
+        <expectedpenalty>0.1000000</expectedpenalty>
+        <expectedanswernote>prt1-1-F</expectedanswernote>
+      </expected>
+    </qtest>
+  </question>
+
+</quiz>

@@ -1,638 +1,687 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="generator" content="pandoc" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-  <title>Minimal STACK API example</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' ry='12' fill='%23007bff'/%3E%3Ctext x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-family='Arial, sans-serif' font-size='28' fill='white'%3ES%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="https://latex.vercel.app/style.min.css" />
-  <!-- <link rel="stylesheet" href="styles.css" /> -->
-  <style>
-    /* Global body styling */
-    body {
-      margin: 0;
-      padding: 0 20px;
-      width: 100%;
-      max-width: none;
-      box-sizing: border-box;
-    }
-    
-    /* AI Response Styling */
-    .ai-response {
-      background-color: #f8f9fa;
-      border-left: 4px solid #007bff;
-      padding: 15px;
-      margin: 10px 0;
-      border-radius: 5px;
-    }
-    
-    .ai-response-content {
-      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-      border: 1px solid #dee2e6;
-      border-radius: 8px;
-      padding: 20px;
-      margin: 15px 0;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    
-    .ai-response-header {
-      display: flex;
-      align-items: center;
-      margin-bottom: 15px;
-      padding-bottom: 10px;
-      border-bottom: 2px solid #007bff;
-    }
-    
-    .ai-icon {
-      font-size: 1.5em;
-      margin-right: 10px;
-    }
-    
-    .ai-title {
-      font-weight: bold;
-      color: #007bff;
-      font-size: 1.1em;
-    }
-    
-    .ai-response-body {
-      color: #333;
-      line-height: 1.7;
-      font-size: 0.95em;
-    }
-    
-    .ai-response-body strong {
-      color: #007bff;
-      font-weight: 600;
-    }
-    
-    .ai-response-body p {
-      margin-bottom: 12px;
-    }
-    
-    .ai-loading {
-      color: #6c757d;
-      font-style: italic;
-      text-align: center;
-      padding: 15px;
-      background-color: #f8f9fa;
-      border-radius: 5px;
-      border: 1px solid #dee2e6;
-    }
-    
-    .ai-error {
-      color: #dc3545;
-      background-color: #f8d7da;
-      border: 1px solid #f5c6cb;
-      padding: 15px;
-      border-radius: 5px;
-      text-align: center;
-      font-weight: 500;
-    }
-    
-    #ai_feedback_section h2 {
-      color: #007bff;
-      margin-bottom: 15px;
-    }
-    
-    /* Question Navigation Styling */
-    #question-navigator {
-      background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
-      color: white;
-      padding: 25px 40px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-radius: 12px;
-      margin-bottom: 25px;
-      box-shadow: 0 4px 16px rgba(0,123,255,0.3);
-    }
-    #question-navigator {
-      width: 100%;
-    }
-    
-    #question-progress {
-      font-size: 1.2em;
-      font-weight: bold;
-    }
-    
-    #navigation-controls button {
-      background: rgba(255,255,255,0.2);
-      border: 2px solid rgba(255,255,255,0.3);
-      color: white;
-      padding: 12px 24px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      font-weight: 600;
-      font-size: 14px;
-    }
-    
-    #navigation-controls button:hover:not(:disabled) {
-      background: rgba(255,255,255,0.3);
-      border-color: rgba(255,255,255,0.5);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-    }
-    
-    #navigation-controls button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      transform: none !important;
-      box-shadow: none !important;
-    }
-    
-    #current-question-container {
-      margin: 30px 0;
-      padding: 20px 40px;
-      border: 1px solid #dee2e6;
-      border-radius: 8px;
-      background: #f8f9fa;
-      width: 100%;
-      text-align: center;
-    }
-    
-    #question-title {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    
-    #question-content {
-      text-align: center;
-    }
-    
-    #question-content .formulation {
-      text-align: center;
-      margin: 0 auto;
-    }
-    
-    #question-content .btn {
-      margin: 10px auto;
-      display: inline-block;
-    }
-    
-    #question-content .vstack {
-      align-items: center;
-    }
-    
-    /* Improved AI Feedback Styling */
-    .ai-response-content {
-      max-width: 800px;
-      margin: 20px auto;
-      line-height: 1.8;
-    }
-    
-    .ai-response-body {
-      text-align: left;
-      padding: 20px;
-    }
-    
-    .ai-response-body h3 {
-      color: #007bff;
-      margin-top: 25px;
-      margin-bottom: 15px;
-      font-size: 1.1em;
-      border-bottom: 2px solid #e9ecef;
-      padding-bottom: 8px;
-    }
-    
-    .ai-response-body p {
-      margin-bottom: 15px;
-    }
-    
-    /* Mathematical Content Spacing */
-    .MathJax_Display {
-      margin: 20px 0 !important;
-    }
-    
-    .formulation {
-      line-height: 1.8;
-      padding: 20px 0;
-    }
-    
-    /* JSXGraph and Interactive Elements Styling */
-    .jsxgraph-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 20px;
-      margin: 20px 0;
-    }
-    
-    .jsxgraph-inputs {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      align-items: flex-start;
-      margin-bottom: 20px;
-      width: 100%;
-      max-width: 400px;
-    }
-    
-    .jsxgraph-inputs > div {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      width: 100%;
-    }
-    
-    .jsxgraph-inputs label {
-      min-width: 120px;
-      text-align: right;
-      font-weight: 500;
-    }
-    
-    .jsxgraph-inputs input[type="text"] {
-      flex: 1;
-      padding: 8px 12px;
-      border: 1px solid #ced4da;
-      border-radius: 4px;
-      font-size: 14px;
-    }
-    
-    .jsxgraph-board {
-      border: 2px solid #dee2e6;
-      border-radius: 8px;
-      margin: 20px 0;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    
-    /* Stack question input styling */
-    .stack input[type="text"] {
-      padding: 8px 12px;
-      border: 1px solid #ced4da;
-      border-radius: 4px;
-      margin: 5px;
-      font-size: 14px;
-    }
-    
-    .stack table {
-      margin: 20px auto;
-      border-collapse: separate;
-      border-spacing: 5px;
-    }
-    
-    .stack td {
-      padding: 5px;
-      vertical-align: middle;
-    }
-    
-    /* Fix JSXGraph input field alignment */
-    .stack .formulation table {
-      width: auto;
-      margin: 0 auto;
-    }
-    
-    .stack .formulation td:first-child {
-      text-align: right;
-      padding-right: 15px;
-      white-space: nowrap;
-      font-weight: 500;
-    }
-    
-    .stack .formulation input {
-      width: 150px;
-      text-align: center;
-    }
-    
-    /* Center JSXGraph elements properly */
-    .stack .formulation > div {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 15px;
-    }
-    
-    /* JSXGraph board centering */
-    .stack .formulation [id*="jxgbox"] {
-      margin: 20px auto;
-      display: block;
-    }
-    
-    /* Question Progress Indicator */
-    .question-type-badge {
-      display: inline-block;
-      background: #e9ecef;
-      color: #495057;
-      padding: 4px 12px;
-      border-radius: 15px;
-      font-size: 0.85em;
-      margin-bottom: 15px;
-    }
-    
-    /* Improved Section Spacing */
-    #current-question-container > * {
-      margin-bottom: 25px;
-    }
-    
-    /* Score Display Enhancement */
-    #q1_stackapi_score {
-      background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-      color: white;
-      padding: 15px;
-      border-radius: 8px;
-      text-align: center;
-      font-weight: bold;
-    }
-    
-    /* General Feedback Styling */
-    .feedback {
-      background: #f8f9fa;
-      border: 1px solid #dee2e6;
-      border-radius: 6px;
-      padding: 20px;
-      margin: 15px 0;
-    }
-    
-    /* Button Improvements */
-    .btn {
-      padding: 12px 24px;
-      font-weight: 600;
-      border-radius: 6px;
-      margin: 8px;
-      transition: all 0.3s ease;
-      border: none;
-      background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
-      color: white;
-      cursor: pointer;
-    }
-    
-    .btn:hover:not(:disabled) {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-      background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
-    }
-    
-    .btn:disabled {
-      opacity: 0.6 !important;
-      cursor: not-allowed !important;
-      transform: none !important;
-      box-shadow: none !important;
-      background: #6c757d !important;
-    }
-    
-    /* Enhanced question container */
-    #current-question-container {
-      margin: 30px 0;
-      padding: 30px 40px;
-      border: 2px solid #e9ecef;
-      border-radius: 12px;
-      background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-      width: 100%;
-      text-align: center;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-    
-    /* Attempt Warning Styling */
-    .attempt-warning {
-      background: #fff3cd;
-      border: 1px solid #ffeaa7;
-      color: #856404;
-      padding: 12px 20px;
-      border-radius: 6px;
-      margin: 10px 0;
-      text-align: center;
-      font-weight: 500;
-      display: none;
-      animation: slideIn 0.3s ease-out;
-    }
-    
-    /* Adaptive Mode Message Styling */
-    .adaptive-message {
-      background: #d1ecf1;
-      border: 1px solid #bee5eb;
-      color: #0c5460;
-      padding: 12px 20px;
-      border-radius: 6px;
-      margin: 10px 0;
-      text-align: center;
-      font-weight: 500;
-      display: none;
-      animation: slideIn 0.3s ease-out;
-    }
-    
-    @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateY(-10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-    
-    /* Locked button styling */
-    #next-question:disabled {
-      background: #6c757d !important;
-      border-color: #6c757d !important;
-      cursor: not-allowed !important;
-    }
-    
-    #next-question:disabled:hover {
-      transform: none !important;
-      box-shadow: none !important;
-    }
-    
-    /* Responsive Design */
-    @media (max-width: 768px) {
+  <head>
+    <meta charset="utf-8" />
+    <meta name="generator" content="pandoc" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=yes"
+    />
+    <title>Minimal STACK API example</title>
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' ry='12' fill='%23007bff'/%3E%3Ctext x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-family='Arial, sans-serif' font-size='28' fill='white'%3ES%3C/text%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="https://latex.vercel.app/style.min.css" />
+    <!-- <link rel="stylesheet" href="styles.css" /> -->
+    <style>
+      /* Global body styling */
       body {
-        padding: 0 10px;
+        margin: 0;
+        padding: 0 20px;
+        width: 100%;
+        max-width: none;
+        box-sizing: border-box;
       }
-      
-      #question-navigator {
-        padding: 15px 20px;
-        flex-direction: column;
-        gap: 15px;
+
+      /* AI Response Styling */
+      .ai-response {
+        background-color: #f8f9fa;
+        border-left: 4px solid #007bff;
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 5px;
       }
-      
-      #navigation-controls {
-        display: flex;
-        gap: 10px;
-      }
-      
-      #current-question-container {
-        padding: 15px 20px;
-      }
-      
+
       .ai-response-content {
-        max-width: 100%;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 15px 0;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       }
-      
-      .attempt-warning {
-        padding: 10px 15px;
+
+      .ai-response-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #007bff;
+      }
+
+      .ai-icon {
+        font-size: 1.5em;
+        margin-right: 10px;
+      }
+
+      .ai-title {
+        font-weight: bold;
+        color: #007bff;
+        font-size: 1.1em;
+      }
+
+      .ai-response-body {
+        color: #333;
+        line-height: 1.7;
+        font-size: 0.95em;
+      }
+
+      .ai-response-body strong {
+        color: #007bff;
+        font-weight: 600;
+      }
+
+      .ai-response-body p {
+        margin-bottom: 12px;
+      }
+
+      .ai-loading {
+        color: #6c757d;
+        font-style: italic;
+        text-align: center;
+        padding: 15px;
+        background-color: #f8f9fa;
+        border-radius: 5px;
+        border: 1px solid #dee2e6;
+      }
+
+      .ai-error {
+        color: #dc3545;
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+        padding: 15px;
+        border-radius: 5px;
+        text-align: center;
+        font-weight: 500;
+      }
+
+      #ai_feedback_section h2 {
+        color: #007bff;
+        margin-bottom: 15px;
+      }
+
+      /* Question Navigation Styling */
+      #question-navigator {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        color: white;
+        padding: 25px 40px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-radius: 12px;
+        margin-bottom: 25px;
+        box-shadow: 0 4px 16px rgba(0, 123, 255, 0.3);
+      }
+      #question-navigator {
+        width: 100%;
+      }
+
+      #question-progress {
+        font-size: 1.2em;
+        font-weight: bold;
+      }
+
+      #navigation-controls button {
+        background: rgba(255, 255, 255, 0.2);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 600;
         font-size: 14px;
       }
-    }
-  </style>
-  <script
-  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML"
-  type="text/javascript"></script>
-<!-- Configuration -->
-<script src="js/config.js" type="text/javascript"></script>
-<!-- Authentication -->
-<script type="module" src="js/auth.js"></script>
-<!-- Supabase JavaScript Client -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<!-- Supabase Configuration -->
-<script>
-// Initialize Supabase client globally
-let SUPABASE_CONFIG = null;
 
-if (typeof window.env !== 'undefined') {
-    SUPABASE_CONFIG = {
-        url: window.env.SUPABASE_URL,
-        anonKey: window.env.SUPABASE_ANON_KEY
-    };
-    console.log('✅ Environment variables loaded');
-} else {
-    console.error('Environment variables not loaded');
-}
+      #navigation-controls button:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.3);
+        border-color: rgba(255, 255, 255, 0.5);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      }
 
-// Wait for Supabase library to load, then initialize
-function initializeSupabase() {
-    if (typeof window.supabase !== 'undefined' && SUPABASE_CONFIG) {
-        window.supabase = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
-        console.log('✅ Supabase client initialized successfully');
-        return true;
-    }
-    return false;
-}
+      #navigation-controls button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none !important;
+        box-shadow: none !important;
+      }
 
-// Try to initialize immediately
-if (!initializeSupabase()) {
-    // If not available, wait for DOM load
-    window.addEventListener('DOMContentLoaded', function() {
-        if (!initializeSupabase()) {
+      #current-question-container {
+        margin: 30px 0;
+        padding: 20px 40px;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        background: #f8f9fa;
+        width: 100%;
+        text-align: center;
+      }
+
+      #question-title {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      #question-content {
+        text-align: center;
+      }
+
+      #question-content .formulation {
+        text-align: center;
+        margin: 0 auto;
+      }
+
+      #question-content .btn {
+        margin: 10px auto;
+        display: inline-block;
+      }
+
+      #question-content .vstack {
+        align-items: center;
+      }
+
+      /* Improved AI Feedback Styling */
+      .ai-response-content {
+        max-width: 800px;
+        margin: 20px auto;
+        line-height: 1.8;
+      }
+
+      .ai-response-body {
+        text-align: left;
+        padding: 20px;
+      }
+
+      .ai-response-body h3 {
+        color: #007bff;
+        margin-top: 25px;
+        margin-bottom: 15px;
+        font-size: 1.1em;
+        border-bottom: 2px solid #e9ecef;
+        padding-bottom: 8px;
+      }
+
+      .ai-response-body p {
+        margin-bottom: 15px;
+      }
+
+      /* Mathematical Content Spacing */
+      .MathJax_Display {
+        margin: 20px 0 !important;
+      }
+
+      .formulation {
+        line-height: 1.8;
+        padding: 20px 0;
+      }
+
+      /* JSXGraph and Interactive Elements Styling */
+      .jsxgraph-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+        margin: 20px 0;
+      }
+
+      .jsxgraph-inputs {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+        margin-bottom: 20px;
+        width: 100%;
+        max-width: 400px;
+      }
+
+      .jsxgraph-inputs > div {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+      }
+
+      .jsxgraph-inputs label {
+        min-width: 120px;
+        text-align: right;
+        font-weight: 500;
+      }
+
+      .jsxgraph-inputs input[type="text"] {
+        flex: 1;
+        padding: 8px 12px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+
+      .jsxgraph-board {
+        border: 2px solid #dee2e6;
+        border-radius: 8px;
+        margin: 20px 0;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      /* Stack question input styling */
+      .stack input[type="text"] {
+        padding: 8px 12px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        margin: 5px;
+        font-size: 14px;
+      }
+
+      .stack table {
+        margin: 20px auto;
+        border-collapse: separate;
+        border-spacing: 5px;
+      }
+
+      .stack td {
+        padding: 5px;
+        vertical-align: middle;
+      }
+
+      /* Fix JSXGraph input field alignment */
+      .stack .formulation table {
+        width: auto;
+        margin: 0 auto;
+      }
+
+      .stack .formulation td:first-child {
+        text-align: right;
+        padding-right: 15px;
+        white-space: nowrap;
+        font-weight: 500;
+      }
+
+      .stack .formulation input {
+        width: 150px;
+        text-align: center;
+      }
+
+      /* Center JSXGraph elements properly */
+      .stack .formulation > div {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+      }
+
+      /* JSXGraph board centering */
+      .stack .formulation [id*="jxgbox"] {
+        margin: 20px auto;
+        display: block;
+      }
+
+      /* Question Progress Indicator */
+      .question-type-badge {
+        display: inline-block;
+        background: #e9ecef;
+        color: #495057;
+        padding: 4px 12px;
+        border-radius: 15px;
+        font-size: 0.85em;
+        margin-bottom: 15px;
+      }
+
+      /* Improved Section Spacing */
+      #current-question-container > * {
+        margin-bottom: 25px;
+      }
+
+      /* Score Display Enhancement */
+      #q1_stackapi_score {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        padding: 15px;
+        border-radius: 8px;
+        text-align: center;
+        font-weight: bold;
+      }
+
+      /* General Feedback Styling */
+      .feedback {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 20px;
+        margin: 15px 0;
+      }
+
+      /* Button Improvements */
+      .btn {
+        padding: 12px 24px;
+        font-weight: 600;
+        border-radius: 6px;
+        margin: 8px;
+        transition: all 0.3s ease;
+        border: none;
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        color: white;
+        cursor: pointer;
+      }
+
+      .btn:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+      }
+
+      .btn:disabled {
+        opacity: 0.6 !important;
+        cursor: not-allowed !important;
+        transform: none !important;
+        box-shadow: none !important;
+        background: #6c757d !important;
+      }
+
+      /* Enhanced question container */
+      #current-question-container {
+        margin: 30px 0;
+        padding: 30px 40px;
+        border: 2px solid #e9ecef;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        width: 100%;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+
+      /* Attempt Warning Styling */
+      .attempt-warning {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        color: #856404;
+        padding: 12px 20px;
+        border-radius: 6px;
+        margin: 10px 0;
+        text-align: center;
+        font-weight: 500;
+        display: none;
+        animation: slideIn 0.3s ease-out;
+      }
+
+      /* Adaptive Mode Message Styling */
+      .adaptive-message {
+        background: #d1ecf1;
+        border: 1px solid #bee5eb;
+        color: #0c5460;
+        padding: 12px 20px;
+        border-radius: 6px;
+        margin: 10px 0;
+        text-align: center;
+        font-weight: 500;
+        display: none;
+        animation: slideIn 0.3s ease-out;
+      }
+
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Locked button styling */
+      #next-question:disabled {
+        background: #6c757d !important;
+        border-color: #6c757d !important;
+        cursor: not-allowed !important;
+      }
+
+      #next-question:disabled:hover {
+        transform: none !important;
+        box-shadow: none !important;
+      }
+
+      /* Responsive Design */
+      @media (max-width: 768px) {
+        body {
+          padding: 0 10px;
+        }
+
+        #question-navigator {
+          padding: 15px 20px;
+          flex-direction: column;
+          gap: 15px;
+        }
+
+        #navigation-controls {
+          display: flex;
+          gap: 10px;
+        }
+
+        #current-question-container {
+          padding: 15px 20px;
+        }
+
+        .ai-response-content {
+          max-width: 100%;
+        }
+
+        .attempt-warning {
+          padding: 10px 15px;
+          font-size: 14px;
+        }
+      }
+    </style>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML"
+      type="text/javascript"
+    ></script>
+    <!-- Configuration -->
+    <script src="js/config.js" type="text/javascript"></script>
+    <!-- Authentication -->
+    <script type="module" src="js/auth.js"></script>
+    <!-- Supabase JavaScript Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Supabase Configuration -->
+    <script>
+      // Initialize Supabase client globally
+      let SUPABASE_CONFIG = null;
+
+      if (typeof window.env !== "undefined") {
+        SUPABASE_CONFIG = {
+          url: window.env.SUPABASE_URL,
+          anonKey: window.env.SUPABASE_ANON_KEY,
+        };
+        console.log("✅ Environment variables loaded");
+      } else {
+        console.error("Environment variables not loaded");
+      }
+
+      // Wait for Supabase library to load, then initialize
+      function initializeSupabase() {
+        if (typeof window.supabase !== "undefined" && SUPABASE_CONFIG) {
+          window.supabase = window.supabase.createClient(
+            SUPABASE_CONFIG.url,
+            SUPABASE_CONFIG.anonKey
+          );
+          console.log("✅ Supabase client initialized successfully");
+          return true;
+        }
+        return false;
+      }
+
+      // Try to initialize immediately
+      if (!initializeSupabase()) {
+        // If not available, wait for DOM load
+        window.addEventListener("DOMContentLoaded", function () {
+          if (!initializeSupabase()) {
             // If still not available, retry after delay
             setTimeout(initializeSupabase, 500);
+          }
+        });
+      }
+    </script>
+    <script src="js/database.js" type="text/javascript"></script>
+    <script src="js/stackjsvle.js" type="text/javascript"></script>
+    <script src="js/stackapicalls.js" type="text/javascript"></script>
+    <script src="js/navigation.js" type="text/javascript"></script>
+    <!-- <script src="js/jsxgraphcore-lazy.min.js" type="text/javascript"></script> -->
+    <!-- <script src="js/jsxgraph.min.js" type="text/javascript"></script> -->
+    <script type="text/javascript">
+      async function docHasLoaded() {
+        // Robust authentication check to prevent redirect ping-pong
+        const hasLocalUser = !!localStorage.getItem("currentUser");
+        const hasCachedSupabase = !!localStorage.getItem("supabase_session");
+
+        let hasSupabaseUser = !!(
+          window.authManager && window.authManager.isAuthenticated()
+        );
+
+        // If authManager not yet initialized, try Supabase client directly
+        if (
+          !hasSupabaseUser &&
+          typeof window.supabase !== "undefined" &&
+          window.supabase.auth
+        ) {
+          try {
+            const {
+              data: { session },
+            } = await window.supabase.auth.getSession();
+            hasSupabaseUser = !!session;
+          } catch (_) {}
         }
-    });
-}
-</script>
-<script src="js/database.js" type="text/javascript"></script>
-<script src="js/stackjsvle.js" type="text/javascript"></script>
-<script src="js/stackapicalls.js" type="text/javascript"></script>
-<script src="js/navigation.js" type="text/javascript"></script>
-<!-- <script src="js/jsxgraphcore-lazy.min.js" type="text/javascript"></script> -->
-<!-- <script src="js/jsxgraph.min.js" type="text/javascript"></script> -->
-<script type="text/javascript">
-    async function docHasLoaded() {
-         // Robust authentication check to prevent redirect ping-pong
-         const hasLocalUser = !!localStorage.getItem('currentUser');
-         const hasCachedSupabase = !!localStorage.getItem('supabase_session');
 
-         let hasSupabaseUser = !!(window.authManager && window.authManager.isAuthenticated());
+        if (!hasSupabaseUser && !hasLocalUser && !hasCachedSupabase) {
+          window.location.href = "/login/login.html";
+          return;
+        }
 
-         // If authManager not yet initialized, try Supabase client directly
-         if (!hasSupabaseUser && typeof window.supabase !== 'undefined' && window.supabase.auth) {
-             try {
-                 const { data: { session } } = await window.supabase.auth.getSession();
-                 hasSupabaseUser = !!session;
-             } catch (_) {}
-         }
+        // Show authenticated user info
+        await showUserInfo();
 
-         if (!hasSupabaseUser && !hasLocalUser && !hasCachedSupabase) {
-             window.location.href = '/login/login.html';
-             return;
-         }
-         
-         // Show authenticated user info
-         await showUserInfo();
-         
-         // Initialize database session first
-         await initializeDatabaseSession();
-         // Then setup questions
-         stackSetup();
-         // Initialize navigation system
-         if (typeof window.initializeNavigationSystem === 'function') {
-             window.initializeNavigationSystem();
-         }
-    }
+        // Initialize database session first
+        await initializeDatabaseSession();
+        // Then setup questions
+        stackSetup();
+        // Initialize navigation system
+        if (typeof window.initializeNavigationSystem === "function") {
+          window.initializeNavigationSystem();
+        }
+      }
 
-    async function showUserInfo() {
+      async function showUserInfo() {
         try {
-            const supaUser = window.authManager && window.authManager.currentUser;
-            const localUserRaw = localStorage.getItem('currentUser');
-            const localUser = localUserRaw ? JSON.parse(localUserRaw) : null;
-            const user = supaUser || localUser;
-            if (user) {
-                // Add user info to header
-                const header = document.querySelector('#title-block-header');
-                if (header) {
-                    const userInfo = document.createElement('div');
-                    userInfo.style.cssText = 'text-align: right; margin-bottom: 10px; font-size: 0.9em; color: #666;';
-                    
-                    let userName = '';
-                    if (supaUser && window.authManager && window.authManager.getUserProfile) {
-                        try {
-                            const profileResult = await window.authManager.getUserProfile();
-                            userName = (profileResult.success && profileResult.data && (profileResult.data.full_name || `${profileResult.data.first_name || ''} ${profileResult.data.last_name || ''}`.trim())) || supaUser.email || '';
-                        } catch (_) {
-                            userName = (supaUser && (supaUser.email || 'User')) || '';
-                        }
-                    } else if (localUser) {
-                        userName = `${localUser.firstName || ''} ${localUser.lastName || ''}`.trim() || localUser.email || 'User';
-                    }
-                    
-                    userInfo.innerHTML = `
+          const supaUser = window.authManager && window.authManager.currentUser;
+          const localUserRaw = localStorage.getItem("currentUser");
+          const localUser = localUserRaw ? JSON.parse(localUserRaw) : null;
+          const user = supaUser || localUser;
+          if (user) {
+            // Add user info to header
+            const header = document.querySelector("#title-block-header");
+            if (header) {
+              const userInfo = document.createElement("div");
+              userInfo.style.cssText =
+                "text-align: right; margin-bottom: 10px; font-size: 0.9em; color: #666;";
+
+              let userName = "";
+              if (
+                supaUser &&
+                window.authManager &&
+                window.authManager.getUserProfile
+              ) {
+                try {
+                  const profileResult =
+                    await window.authManager.getUserProfile();
+                  userName =
+                    (profileResult.success &&
+                      profileResult.data &&
+                      (profileResult.data.full_name ||
+                        `${profileResult.data.first_name || ""} ${
+                          profileResult.data.last_name || ""
+                        }`.trim())) ||
+                    supaUser.email ||
+                    "";
+                } catch (_) {
+                  userName = (supaUser && (supaUser.email || "User")) || "";
+                }
+              } else if (localUser) {
+                userName =
+                  `${localUser.firstName || ""} ${
+                    localUser.lastName || ""
+                  }`.trim() ||
+                  localUser.email ||
+                  "User";
+              }
+
+              userInfo.innerHTML = `
                         <span>Welcome, ${userName}</span>
                         <button onclick="handleLogout()" style="margin-left: 15px; padding: 5px 10px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer;">Logout</button>
                     `;
-                    header.appendChild(userInfo);
-                }
+              header.appendChild(userInfo);
             }
+          }
         } catch (error) {
-            console.error('Error showing user info:', error);
+          console.error("Error showing user info:", error);
         }
-    }
+      }
 
-    async function handleLogout() {
-        if (confirm('Are you sure you want to logout?')) {
-            // Try Supabase sign out if available
-            if (window.authManager && window.authManager.signOut) {
-                try { await window.authManager.signOut(); } catch (_) {}
-            }
-            // Clear local session fallback
-            localStorage.removeItem('currentUser');
-            // Redirect to login
-            window.location.href = '/login/login.html';
+      async function handleLogout() {
+        if (confirm("Are you sure you want to logout?")) {
+          // Try Supabase sign out if available
+          if (window.authManager && window.authManager.signOut) {
+            try {
+              await window.authManager.signOut();
+            } catch (_) {}
+          }
+          // Clear local session fallback
+          localStorage.removeItem("currentUser");
+          // Redirect to login
+          window.location.href = "/login/login.html";
         }
-    }
-</script>
-</head>
-<body onload="docHasLoaded()" >
-<header id="title-block-header">
-<h1 class="title"><p>Example</p></h1>
-</header>
-<!-- Question Navigation Container -->
-<div id="question-navigator">
-  <div id="question-progress">
-    <span id="current-question">1</span> of <span id="total-questions">7</span>
-  </div>
-  
-  <!-- Navigation Buttons -->
-  <div id="navigation-controls">
-    <button id="prev-question" onclick="navigateQuestion(-1)" disabled>← Previous</button>
-    <button id="next-question" onclick="navigateQuestion(1)">Next →</button>
-  </div>
-</div>
+      }
+    </script>
+  </head>
+  <body onload="docHasLoaded()">
+    <header id="title-block-header">
+      <h1 class="title"><p>Linear Algebra</p></h1>
+    </header>
+    <!-- Question Navigation Container -->
+    <div id="question-navigator">
+      <div id="question-progress">
+        <span id="current-question">1</span> of
+        <span id="total-questions">7</span>
+      </div>
 
-<!-- Single Question Container -->
-<div id="current-question-container">
-  <div class="question-type-badge" id="question-type">Question Type: Simple</div>
-  <h2 id="question-title">Simple question</h2>
-  <div id="question-content" class="container-fluid que stack" data-qfile="questions/Partial fraction decomposition.xml">
-  </div>
-</div>
+      <!-- Navigation Buttons -->
+      <div id="navigation-controls">
+        <button id="prev-question" onclick="navigateQuestion(-1)" disabled>
+          ← Previous
+        </button>
+        <button id="next-question" onclick="navigateQuestion(1)">Next →</button>
+      </div>
+    </div>
 
-<script>
-	var imageDir = ''
-	imgs = document.querySelectorAll("img");
-	for (var img of imgs) {
-		imgsrc = img.getAttribute("src");
-		img.setAttribute("src",imageDir.concat(imgsrc));
-	}
-</script>
-</body>
+    <!-- Single Question Container -->
+    <div id="current-question-container">
+      <div class="question-type-badge" id="question-type">
+        Question Type: STACK Questions with the use of AI
+      </div>
+      <h2 id="question-title">Systems of Linear Equations: Row reduction</h2>
+      <div
+        id="question-content"
+        class="container-fluid que stack"
+        data-qfile="questions/ 
+        Basic Maths-System of Equations with No Solution.xml"
+      ></div>
+    </div>
+
+    <script>
+      var imageDir = "";
+      imgs = document.querySelectorAll("img");
+      for (var img of imgs) {
+        imgsrc = img.getAttribute("src");
+        img.setAttribute("src", imageDir.concat(imgsrc));
+      }
+    </script>
+  </body>
 </html>

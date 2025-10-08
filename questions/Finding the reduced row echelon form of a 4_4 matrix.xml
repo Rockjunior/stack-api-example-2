@@ -1,0 +1,315 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<quiz>
+<!-- question: 125312  -->
+  <question type="stack">
+    <name>
+      <text>Finding the reduced row echelon form of a 4*4 matrix</text>
+    </name>
+    <questiontext format="html">
+      <text><![CDATA[<p>Consider the system of equations \(M\mathbf{x} = \mathbf{b}\) where \(M\) is a \(4\times 4\) matrix.</p>
+<p>The augmented matrix \([M | \mathbf{b} ]\) is:</p>
+\(N={@R@} \)
+<p>(The line separating the coefficient matrix from the vector of constants has been omitted.)</p>
+
+<p><b>(a) </b>Perform elementary row operations on \(N\) until it reaches reduced row echelon form.</p>
+[[input:ans1]]
+[[validation:ans1]]
+[[feedback:prt1]]
+
+<p><br></p>
+
+<p><b>(b)</b> Write down the general solution of \( M\mathbf{x}=\mathbf{b}\).</p>
+<p>If the equations have no solution, type <code>none</code> for all the entries. If the equations have infinite solutions, enter a suitable parameterized answer (e.g., \([t, t+1, 7 \cdot t, 2 \cdot t]\)).</p>
+\(\mathbf{x}=\) [[input:ans2]]
+[[validation:ans2]]
+[[feedback:prt2]]]]></text>
+    </questiontext>
+    <generalfeedback format="html">
+      <text><![CDATA[<h3>Worked solution</h3>
+<p>Here are the steps to reach the reduced row echelon form.</p>
+<p> Make the leading coefficient in the first row \((1,1)\) equal to \(1\):
+<p>Divide the first row by \({@first_element@}\) to make the leading coefficient \(1\):</p>
+<p>\({@matrix_R_1@}\)</p>
+<p>Divide the first row \(3\) by \({@second_element@} : R_{2}=\frac{R_{2}}{{@second_element@}}\)</p>
+<p>\({@matrix_R_2@}\)</p>
+<p>Subtract row \(2\) from row \(1: R_{1}= R_{1}-R_{2}\)</p>
+<p>\({@matrix_R_3@}\)</p>
+<p>Multiply row \(3\) by \({@third_element@}\)</p>
+<p>\({@matrix_R_4@}\)</p>
+<p>Add row \(3\) multiplied by \(2\) to row \(1 : R_{1}= R_{1}+2R_{3}\)</p>
+<p>\({@matrix_R_5@}\)</p>
+<p>The reduced row echelon form is \[{@matrix_R_5@}\].</p><p>Reading from the third row gives us: \(x_4 = -1\). </p><p>The first two rows give: \(x_1 + x_3 = -4\) and \(x_2 + x_3 = 3\). Any value of \(x_3\) will allow us to find values of \(x_1\) and \(x_2\) which make a solution. Hence, we can consider \(x_3\) as a "free" variable and give a parameterisation to describe the solutions. For example, let \(x_3 = t\) then \(x_1 = -4 - t\) and \(x_2 = 3 - t\).</p><p></p><p>The general solution of \(M{\mathbf x} = {\mathbf b}\) is  \([ -4-t ,3-t,t,-1]\).</p><p></p>]]></text>
+    </generalfeedback>
+    <defaultgrade>2</defaultgrade>
+    <penalty>0.1</penalty>
+    <hidden>0</hidden>
+    <idnumber></idnumber>
+    <stackversion>
+      <text>2023060500</text>
+    </stackversion>
+    <questionvariables>
+      <text>R:matrix(rand_with_prohib(-5,5,[0])*[1,1,2,-2,1],rand_with_prohib(-5,5,[0])*[0,1,1,0,3],rand_with_prohib(-5,5,[0])*[0,0,0,1,-1],[0,0,0,0,0]);
+R_1: row (R, 1);
+R_2: row (R, 2);
+R_3: row (R, 3);
+R_4: row (R, 4);
+first_element:R[1,1];
+R_1_1:1/first_element*(R_1);
+matrix_R_1:append(R_1_1,R_2,R_3,R_4);/*row 1*/
+second_element:R[2,2];
+R_2_1:1/second_element*(R_2);
+matrix_R_2:append(R_1_1,R_2_1,R_3,R_4);/*row 2*/
+R_3_1:R_1_1-R_2_1;
+matrix_R_3:append(R_3_1,R_2_1,R_3,R_4);/*new row 1*/
+third_element:R[3,4];
+row_3:1/third_element*(R_3);
+matrix_R_4:append(R_3_1,R_2_1,row_3,R_4);/* row 3*/
+row_1:2*row_3+(R_3_1);
+matrix_R_5:append(row_1,R_2_1,row_3,R_4);/* rref*/
+M:submatrix(R, 5);
+b:col(R, 5);
+ta1:transpose([ -4-t ,3-t,t,-1]);</text>
+    </questionvariables>
+    <specificfeedback format="html">
+      <text></text>
+    </specificfeedback>
+    <questionnote format="moodle_auto_format">
+      <text>{@R=matrix_R_5@}</text>
+    </questionnote>
+    <questiondescription format="moodle_auto_format">
+      <text><![CDATA[<p id="author">Emmaculate Odhiambo</p>
+<p id="concept">N/A</p>
+<p id="reviewer">Godfrey Wabwire</p>
+<p id="reviewer">Wastalas Motognon</p>
+<p id="description">Given a matrix, need to find its reduced row echelon form and its general solutions</p>]]></text>
+    </questiondescription>
+    <questionsimplify>1</questionsimplify>
+    <assumepositive>0</assumepositive>
+    <assumereal>0</assumereal>
+    <prtcorrect format="html">
+      <text><![CDATA[<span style="font-size: 1.5em; color:green;"><i class="fa fa-check"></i></span> Correct answer, well done.]]></text>
+    </prtcorrect>
+    <prtpartiallycorrect format="html">
+      <text><![CDATA[<span style="font-size: 1.5em; color:orange;"><i class="fa fa-adjust"></i></span> Your answer is partially correct.]]></text>
+    </prtpartiallycorrect>
+    <prtincorrect format="html">
+      <text><![CDATA[<span style="font-size: 1.5em; color:red;"><i class="fa fa-times"></i></span> Incorrect answer.]]></text>
+    </prtincorrect>
+    <decimals>.</decimals>
+    <scientificnotation>*10</scientificnotation>
+    <multiplicationsign>dot</multiplicationsign>
+    <sqrtsign>1</sqrtsign>
+    <complexno>i</complexno>
+    <inversetrig>cos-1</inversetrig>
+    <logicsymbol>lang</logicsymbol>
+    <matrixparens>[</matrixparens>
+    <isbroken>0</isbroken>
+    <variantsselectionseed></variantsselectionseed>
+    <input>
+      <name>ans1</name>
+      <type>matrix</type>
+      <tans>matrix_R_5</tans>
+      <boxsize>5</boxsize>
+      <strictsyntax>1</strictsyntax>
+      <insertstars>0</insertstars>
+      <syntaxhint></syntaxhint>
+      <syntaxattribute>0</syntaxattribute>
+      <forbidwords></forbidwords>
+      <allowwords></allowwords>
+      <forbidfloat>1</forbidfloat>
+      <requirelowestterms>0</requirelowestterms>
+      <checkanswertype>0</checkanswertype>
+      <mustverify>1</mustverify>
+      <showvalidation>3</showvalidation>
+      <options></options>
+    </input>
+    <input>
+      <name>ans2</name>
+      <type>matrix</type>
+      <tans>ta1</tans>
+      <boxsize>15</boxsize>
+      <strictsyntax>1</strictsyntax>
+      <insertstars>0</insertstars>
+      <syntaxhint></syntaxhint>
+      <syntaxattribute>0</syntaxattribute>
+      <forbidwords></forbidwords>
+      <allowwords></allowwords>
+      <forbidfloat>1</forbidfloat>
+      <requirelowestterms>0</requirelowestterms>
+      <checkanswertype>0</checkanswertype>
+      <mustverify>1</mustverify>
+      <showvalidation>3</showvalidation>
+      <options></options>
+    </input>
+    <prt>
+      <name>prt1</name>
+      <value>1.0000000</value>
+      <autosimplify>1</autosimplify>
+      <feedbackstyle>1</feedbackstyle>
+      <feedbackvariables>
+        <text></text>
+      </feedbackvariables>
+      <node>
+        <name>0</name>
+        <description>Checks for correct answer</description>
+        <answertest>AlgEquiv</answertest>
+        <sans>ans1</sans>
+        <tans>matrix_R_5</tans>
+        <testoptions></testoptions>
+        <quiet>0</quiet>
+        <truescoremode>=</truescoremode>
+        <truescore>1</truescore>
+        <truepenalty></truepenalty>
+        <truenextnode>-1</truenextnode>
+        <trueanswernote>prt1-1-T</trueanswernote>
+        <truefeedback format="html">
+          <text></text>
+        </truefeedback>
+        <falsescoremode>=</falsescoremode>
+        <falsescore>0</falsescore>
+        <falsepenalty></falsepenalty>
+        <falsenextnode>-1</falsenextnode>
+        <falseanswernote>prt1-1-F</falseanswernote>
+        <falsefeedback format="html">
+          <text></text>
+        </falsefeedback>
+      </node>
+    </prt>
+    <prt>
+      <name>prt2</name>
+      <value>1.0000000</value>
+      <autosimplify>1</autosimplify>
+      <feedbackstyle>1</feedbackstyle>
+      <feedbackvariables>
+        <text>svars:listofvars(ev(ans2,simp))</text>
+      </feedbackvariables>
+      <node>
+        <name>0</name>
+        <description>Checks for correct answer</description>
+        <answertest>AlgEquiv</answertest>
+        <sans>M.ans2</sans>
+        <tans>b</tans>
+        <testoptions></testoptions>
+        <quiet>0</quiet>
+        <truescoremode>+</truescoremode>
+        <truescore>0.5</truescore>
+        <truepenalty></truepenalty>
+        <truenextnode>1</truenextnode>
+        <trueanswernote>prt2-1-T</trueanswernote>
+        <truefeedback format="html">
+          <text><![CDATA[<p>Your answer satisfies the equation, well done.<br></p>]]></text>
+        </truefeedback>
+        <falsescoremode>=</falsescoremode>
+        <falsescore>0</falsescore>
+        <falsepenalty></falsepenalty>
+        <falsenextnode>-1</falsenextnode>
+        <falseanswernote>prt2-1-F</falseanswernote>
+        <falsefeedback format="html">
+          <text><![CDATA[<p>Your solution should satisfy \(M\mathbf{x} = \mathbf{b}\).&nbsp; In fact \[{@M@}{@ans2@} = {@M.ans2@} \neq {@b@}\] so you must have done something wrong!<br></p>]]></text>
+        </falsefeedback>
+      </node>
+      <node>
+        <name>1</name>
+        <description>Checks for correct answer</description>
+        <answertest>AlgEquiv</answertest>
+        <sans>length(svars)</sans>
+        <tans>1</tans>
+        <testoptions></testoptions>
+        <quiet>0</quiet>
+        <truescoremode>+</truescoremode>
+        <truescore>0.5</truescore>
+        <truepenalty></truepenalty>
+        <truenextnode>-1</truenextnode>
+        <trueanswernote>prt2-2-T</trueanswernote>
+        <truefeedback format="html">
+          <text></text>
+        </truefeedback>
+        <falsescoremode>-</falsescoremode>
+        <falsescore>0</falsescore>
+        <falsepenalty></falsepenalty>
+        <falsenextnode>-1</falsenextnode>
+        <falseanswernote>prt2-2-F</falseanswernote>
+        <falsefeedback format="html">
+          <text><![CDATA[<p>Your answer should have a single arbitrary constant to indicate it is a general (parameterised) solution.<br></p>]]></text>
+        </falsefeedback>
+      </node>
+    </prt>
+    <deployedseed>1403780447</deployedseed>
+    <deployedseed>131358390</deployedseed>
+    <deployedseed>714628058</deployedseed>
+    <deployedseed>286345550</deployedseed>
+    <deployedseed>1005901445</deployedseed>
+    <deployedseed>1360981211</deployedseed>
+    <deployedseed>1246614434</deployedseed>
+    <deployedseed>829195812</deployedseed>
+    <deployedseed>1406953651</deployedseed>
+    <deployedseed>2076822742</deployedseed>
+    <deployedseed>1412698096</deployedseed>
+    <deployedseed>782726033</deployedseed>
+    <deployedseed>1297947355</deployedseed>
+    <deployedseed>659835484</deployedseed>
+    <deployedseed>752944971</deployedseed>
+    <deployedseed>381858083</deployedseed>
+    <deployedseed>1689509605</deployedseed>
+    <deployedseed>991430254</deployedseed>
+    <deployedseed>1761060599</deployedseed>
+    <deployedseed>638785476</deployedseed>
+    <deployedseed>1511564495</deployedseed>
+    <deployedseed>2020747356</deployedseed>
+    <deployedseed>278046565</deployedseed>
+    <deployedseed>545393927</deployedseed>
+    <deployedseed>1726993654</deployedseed>
+    <deployedseed>1605848625</deployedseed>
+    <deployedseed>1403481264</deployedseed>
+    <deployedseed>600564544</deployedseed>
+    <deployedseed>2108686804</deployedseed>
+    <deployedseed>2086052056</deployedseed>
+    <deployedseed>647855852</deployedseed>
+    <deployedseed>1095864458</deployedseed>
+    <deployedseed>1279140248</deployedseed>
+    <deployedseed>1500196227</deployedseed>
+    <deployedseed>1199133228</deployedseed>
+    <deployedseed>2012655747</deployedseed>
+    <deployedseed>1364245999</deployedseed>
+    <deployedseed>1364053169</deployedseed>
+    <deployedseed>104637698</deployedseed>
+    <deployedseed>344925102</deployedseed>
+    <deployedseed>578926670</deployedseed>
+    <deployedseed>1134618762</deployedseed>
+    <deployedseed>1655764019</deployedseed>
+    <deployedseed>1374027623</deployedseed>
+    <deployedseed>76526076</deployedseed>
+    <deployedseed>1268912697</deployedseed>
+    <deployedseed>501741344</deployedseed>
+    <deployedseed>2123979442</deployedseed>
+    <deployedseed>164988934</deployedseed>
+    <deployedseed>960949725</deployedseed>
+    <deployedseed>1641645468</deployedseed>
+    <deployedseed>1661247761</deployedseed>
+    <qtest>
+      <testcase>1</testcase>
+      <description></description>
+      <testinput>
+        <name>ans1</name>
+        <value>matrix_R_5</value>
+      </testinput>
+      <testinput>
+        <name>ans2</name>
+        <value>ta1</value>
+      </testinput>
+      <expected>
+        <name>prt1</name>
+        <expectedscore>1.0000000</expectedscore>
+        <expectedpenalty>0.0000000</expectedpenalty>
+        <expectedanswernote>prt1-1-T</expectedanswernote>
+      </expected>
+      <expected>
+        <name>prt2</name>
+        <expectedscore>1.0000000</expectedscore>
+        <expectedpenalty>0.0000000</expectedpenalty>
+        <expectedanswernote>prt2-2-T</expectedanswernote>
+      </expected>
+    </qtest>
+  </question>
+
+</quiz>

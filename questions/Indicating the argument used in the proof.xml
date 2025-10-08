@@ -1,0 +1,569 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<quiz>
+<!-- question: 145103  -->
+  <question type="stack">
+    <name>
+      <text>Indicating the argument used in the proof</text>
+    </name>
+    <questiontext format="html">
+      <text><![CDATA[<p>Consider the statement below and the proof given.
+<br>Fill in the blanks to indicate which argument is used in each step of the proof.</p>
+
+<p><b>Statement</b></p>
+<p>Suppose that \(A\) is a square matrix. Let \(B\) be the square matrix obtained from \(A\) by multiplying a single row by the scalar \(\alpha\), or by multiplying a single column by a scalar \(\alpha\). 
+<br>Then, \(\text{det}(B) = \alpha \text{det}(A)\)</p>
+
+<p><b>Proof</b></p>
+<p>Let \(i\) be the index of the row of \(A\) which was multiplied by \(\alpha\) to obtain \(B\). Then, </p>
+<table>
+  <tr height="100px">
+    <td width="400px">\(\text{det}(B) = \sum_{j=1}^{n}(-1)^{i+j} [B]_{ij} \text{det}(B(i|j)) \)</td>
+    <td width="400px">by [[input:ans1]] [[validation:ans1]]<br>[[feedback:prt1]]</td>
+  </tr>
+  <tr height="100px">
+    <td>\(\hspace{56px}= \sum_{j=1}^{n}(-1)^{i+j} [B]_{ij} \text{det}(A(i|j))\)</td>
+    <td>using \(B(i|j)=A(i|j)\) because <br>[[input:ans2]] [[validation:ans2]]<br>[[feedback:prt2]]</td>
+  </tr>
+  <tr height="100px">
+    <td>\(\hspace{56px}= \sum_{j=1}^{n}(-1)^{i+j} \alpha [A]_{ij} \text{det}(A(i|j))\)</td>
+    <td>using \([B]_{ij}=\alpha [A]_{ij}\) because <br>[[input:ans3]] [[validation:ans3]]<br>[[feedback:prt3]]</td>
+  </tr>
+  <tr height="100px">
+    <td>\(\hspace{56px}= \alpha \sum_{j=1}^{n}(-1)^{i+j} [A]_{ij} \text{det}(A(i|j))\)</td>
+    <td>by [[input:ans4]] [[validation:ans4]]<br>[[feedback:prt4]]</td>
+  </tr>
+  <tr height="100px">
+    <td>\(\hspace{56px}= \alpha \text{det}(A)\)</td>
+    <td>by [[input:ans5]] [[validation:ans5]]<br>[[feedback:prt5]]</td>
+  </tr>
+</table>
+
+<p>The proof for the case of a multiple of a column is entirely similar.</p>]]></text>
+    </questiontext>
+    <generalfeedback format="html">
+      <text><![CDATA[<h3>Worked Solution</h3>
+
+<p><b>Proof</b></p>
+<table>
+  <tr height="50px">
+    <td width="380px">\(\text{det}(B) = \sum_{j=1}^{n}(-1)^{i+j} [B]_{ij} \text{det}(B(i|j)) \)</td>
+    <td width="700px">by <b>the definition of the determinant</b>.</td>
+  </tr>
+  <tr height="50px">
+    <td>\(\hspace{56px}= \sum_{j=1}^{n}(-1)^{i+j} [B]_{ij} \text{det}(A(i|j))\)</td>
+    <td>using \(B(i|j)=A(i|j)\) because <b>all rows except row \(i\) are the same for \(A\) and \(B\)</b>.</td>
+  </tr>
+  <tr height="50px">
+    <td>\(\hspace{56px}= \sum_{j=1}^{n}(-1)^{i+j} \alpha [A]_{ij} \text{det}(A(i|j))\)</td>
+    <td>using \([B]_{ij}=\alpha [A]_{ij}\) because <b>\(B\) was obtained by multiplying row \(i\) of \(A\) by \(\alpha\)</b>.</td>
+  </tr>
+  <tr height="50px">
+    <td>\(\hspace{56px}= \alpha \sum_{j=1}^{n}(-1)^{i+j} [A]_{ij} \text{det}(A(i|j))\)</td>
+    <td>by <b>distributivity</b>.</td>
+  </tr>
+  <tr height="50px">
+    <td>\(\hspace{56px}= \alpha \text{det}(A)\)</td>
+    <td>by <b>the definition of the determinant</b>.</td>
+  </tr>
+</table>
+
+<p>The proof for the case of a multiple of a column is entirely similar.</p>]]></text>
+    </generalfeedback>
+    <defaultgrade>2</defaultgrade>
+    <penalty>0.1</penalty>
+    <hidden>0</hidden>
+    <idnumber></idnumber>
+    <stackversion>
+      <text>2023060500</text>
+    </stackversion>
+    <questionvariables>
+      <text><![CDATA[ta1:random_permutation([
+  ["the definition of the determinant", true],
+  ["distributivity", false],
+  ["the definition of a square matrix", false],
+  ["the definition of the adjoint matrix", false]
+]);
+
+ta2:random_permutation([
+  ["all rows except for row i are the same for A and B", true],
+  ["row i is the same for A and B", false],
+  ["all columns except for column j are the same for A and B", false],
+  ["column j is the same for A and B", false]
+]);
+
+ta3:random_permutation([
+  ["B was obtained by multiplying row i of A by alpha", true],
+  ["B was obtained by multiplying column i of A by alpha", false],
+  ["B equals A multiplied by alpha", false]
+]);
+
+ta4:random_permutation([
+  ["distributivity", true],
+  ["the definition of the determinant", false],
+  ["commutativity", false]
+]);
+
+ta5:random_permutation([
+  ["the definition of the determinant", true],
+  ["distributivity", false],
+  ["the definition of the adjoint matrix", false],
+  ["orthogonality", false]
+]);]]></text>
+    </questionvariables>
+    <specificfeedback format="html">
+      <text></text>
+    </specificfeedback>
+    <questionnote format="moodle_auto_format">
+      <text><![CDATA[Answers:
+<p>\({@ta1@}\)</p>
+<p>\({@ta2@}\)</p>
+<p>\({@ta3@}\)</p>
+<p>\({@ta4@}\)</p>
+<p>\({@ta5@}\)</p>]]></text>
+    </questionnote>
+    <questiondescription format="html">
+      <text><![CDATA[<p id="author">Emmaculate Odhiambo</p>
+<p id="concept">NA</p>
+<p id="reviewer">Nixson Kiplagat</p>
+<p id="reviewer">Georg Osang</p>
+<p id="description">This question involves a proof demonstrating a property of determinants in linear algebra. The statement states that if a square matrix \(A\) is modified by multiplying a single row or column by a scalar \(\alpha\), the determinant of the resulting matrix \(B\) is equal to \(\alpha\) times the determinant of \(A\). The task is to fill in the missing arguments used in each step of the proof, showcasing the logical reasoning behind each equality. </p>]]></text>
+    </questiondescription>
+    <questionsimplify>1</questionsimplify>
+    <assumepositive>0</assumepositive>
+    <assumereal>0</assumereal>
+    <prtcorrect format="html">
+      <text><![CDATA[<span style="font-size: 1.5em; color:green;"><i class="fa fa-check"></i></span> Correct answer, well done.]]></text>
+    </prtcorrect>
+    <prtpartiallycorrect format="html">
+      <text><![CDATA[<span style="font-size: 1.5em; color:orange;"><i class="fa fa-adjust"></i></span> Your answer is partially correct.]]></text>
+    </prtpartiallycorrect>
+    <prtincorrect format="html">
+      <text><![CDATA[<span style="font-size: 1.5em; color:red;"><i class="fa fa-times"></i></span> Incorrect answer.]]></text>
+    </prtincorrect>
+    <decimals>.</decimals>
+    <scientificnotation>*10</scientificnotation>
+    <multiplicationsign>dot</multiplicationsign>
+    <sqrtsign>1</sqrtsign>
+    <complexno>i</complexno>
+    <inversetrig>cos-1</inversetrig>
+    <logicsymbol>lang</logicsymbol>
+    <matrixparens>[</matrixparens>
+    <isbroken>0</isbroken>
+    <variantsselectionseed></variantsselectionseed>
+    <input>
+      <name>ans1</name>
+      <type>dropdown</type>
+      <tans>ta1</tans>
+      <boxsize>15</boxsize>
+      <strictsyntax>1</strictsyntax>
+      <insertstars>0</insertstars>
+      <syntaxhint></syntaxhint>
+      <syntaxattribute>0</syntaxattribute>
+      <forbidwords></forbidwords>
+      <allowwords></allowwords>
+      <forbidfloat>1</forbidfloat>
+      <requirelowestterms>0</requirelowestterms>
+      <checkanswertype>0</checkanswertype>
+      <mustverify>0</mustverify>
+      <showvalidation>0</showvalidation>
+      <options></options>
+    </input>
+    <input>
+      <name>ans2</name>
+      <type>dropdown</type>
+      <tans>ta2</tans>
+      <boxsize>15</boxsize>
+      <strictsyntax>1</strictsyntax>
+      <insertstars>0</insertstars>
+      <syntaxhint></syntaxhint>
+      <syntaxattribute>0</syntaxattribute>
+      <forbidwords></forbidwords>
+      <allowwords></allowwords>
+      <forbidfloat>1</forbidfloat>
+      <requirelowestterms>0</requirelowestterms>
+      <checkanswertype>0</checkanswertype>
+      <mustverify>0</mustverify>
+      <showvalidation>0</showvalidation>
+      <options></options>
+    </input>
+    <input>
+      <name>ans3</name>
+      <type>dropdown</type>
+      <tans>ta3</tans>
+      <boxsize>15</boxsize>
+      <strictsyntax>1</strictsyntax>
+      <insertstars>0</insertstars>
+      <syntaxhint></syntaxhint>
+      <syntaxattribute>0</syntaxattribute>
+      <forbidwords></forbidwords>
+      <allowwords></allowwords>
+      <forbidfloat>1</forbidfloat>
+      <requirelowestterms>0</requirelowestterms>
+      <checkanswertype>0</checkanswertype>
+      <mustverify>0</mustverify>
+      <showvalidation>0</showvalidation>
+      <options></options>
+    </input>
+    <input>
+      <name>ans4</name>
+      <type>dropdown</type>
+      <tans>ta4</tans>
+      <boxsize>15</boxsize>
+      <strictsyntax>1</strictsyntax>
+      <insertstars>0</insertstars>
+      <syntaxhint></syntaxhint>
+      <syntaxattribute>0</syntaxattribute>
+      <forbidwords></forbidwords>
+      <allowwords></allowwords>
+      <forbidfloat>1</forbidfloat>
+      <requirelowestterms>0</requirelowestterms>
+      <checkanswertype>0</checkanswertype>
+      <mustverify>0</mustverify>
+      <showvalidation>0</showvalidation>
+      <options></options>
+    </input>
+    <input>
+      <name>ans5</name>
+      <type>dropdown</type>
+      <tans>ta5</tans>
+      <boxsize>15</boxsize>
+      <strictsyntax>1</strictsyntax>
+      <insertstars>0</insertstars>
+      <syntaxhint></syntaxhint>
+      <syntaxattribute>0</syntaxattribute>
+      <forbidwords></forbidwords>
+      <allowwords></allowwords>
+      <forbidfloat>1</forbidfloat>
+      <requirelowestterms>0</requirelowestterms>
+      <checkanswertype>0</checkanswertype>
+      <mustverify>0</mustverify>
+      <showvalidation>0</showvalidation>
+      <options></options>
+    </input>
+    <prt>
+      <name>prt1</name>
+      <value>1.0000000</value>
+      <autosimplify>1</autosimplify>
+      <feedbackstyle>1</feedbackstyle>
+      <feedbackvariables>
+        <text></text>
+      </feedbackvariables>
+      <node>
+        <name>0</name>
+        <description>check for correct choice</description>
+        <answertest>AlgEquiv</answertest>
+        <sans>ans1</sans>
+        <tans>mcq_correct(ta1)[1]</tans>
+        <testoptions></testoptions>
+        <quiet>0</quiet>
+        <truescoremode>=</truescoremode>
+        <truescore>1</truescore>
+        <truepenalty></truepenalty>
+        <truenextnode>-1</truenextnode>
+        <trueanswernote>prt1-1-T</trueanswernote>
+        <truefeedback format="html">
+          <text></text>
+        </truefeedback>
+        <falsescoremode>=</falsescoremode>
+        <falsescore>0</falsescore>
+        <falsepenalty></falsepenalty>
+        <falsenextnode>-1</falsenextnode>
+        <falseanswernote>prt1-1-F</falseanswernote>
+        <falsefeedback format="html">
+          <text></text>
+        </falsefeedback>
+      </node>
+    </prt>
+    <prt>
+      <name>prt2</name>
+      <value>1.0000000</value>
+      <autosimplify>1</autosimplify>
+      <feedbackstyle>1</feedbackstyle>
+      <feedbackvariables>
+        <text></text>
+      </feedbackvariables>
+      <node>
+        <name>0</name>
+        <description>check for correct choice</description>
+        <answertest>AlgEquiv</answertest>
+        <sans>ans2</sans>
+        <tans>mcq_correct(ta2)[1]</tans>
+        <testoptions></testoptions>
+        <quiet>0</quiet>
+        <truescoremode>=</truescoremode>
+        <truescore>1</truescore>
+        <truepenalty></truepenalty>
+        <truenextnode>-1</truenextnode>
+        <trueanswernote>prt2-1-T</trueanswernote>
+        <truefeedback format="html">
+          <text></text>
+        </truefeedback>
+        <falsescoremode>=</falsescoremode>
+        <falsescore>0</falsescore>
+        <falsepenalty></falsepenalty>
+        <falsenextnode>-1</falsenextnode>
+        <falseanswernote>prt2-1-F</falseanswernote>
+        <falsefeedback format="html">
+          <text></text>
+        </falsefeedback>
+      </node>
+    </prt>
+    <prt>
+      <name>prt3</name>
+      <value>1.0000000</value>
+      <autosimplify>1</autosimplify>
+      <feedbackstyle>1</feedbackstyle>
+      <feedbackvariables>
+        <text></text>
+      </feedbackvariables>
+      <node>
+        <name>0</name>
+        <description>check for correct choice</description>
+        <answertest>AlgEquiv</answertest>
+        <sans>ans3</sans>
+        <tans>mcq_correct(ta3)[1]</tans>
+        <testoptions></testoptions>
+        <quiet>0</quiet>
+        <truescoremode>=</truescoremode>
+        <truescore>1</truescore>
+        <truepenalty></truepenalty>
+        <truenextnode>-1</truenextnode>
+        <trueanswernote>prt3-1-T</trueanswernote>
+        <truefeedback format="html">
+          <text></text>
+        </truefeedback>
+        <falsescoremode>=</falsescoremode>
+        <falsescore>0</falsescore>
+        <falsepenalty></falsepenalty>
+        <falsenextnode>-1</falsenextnode>
+        <falseanswernote>prt3-1-F</falseanswernote>
+        <falsefeedback format="html">
+          <text></text>
+        </falsefeedback>
+      </node>
+    </prt>
+    <prt>
+      <name>prt4</name>
+      <value>1.0000000</value>
+      <autosimplify>1</autosimplify>
+      <feedbackstyle>1</feedbackstyle>
+      <feedbackvariables>
+        <text></text>
+      </feedbackvariables>
+      <node>
+        <name>0</name>
+        <description>check for correct choice</description>
+        <answertest>AlgEquiv</answertest>
+        <sans>ans4</sans>
+        <tans>mcq_correct(ta4)[1]</tans>
+        <testoptions></testoptions>
+        <quiet>0</quiet>
+        <truescoremode>=</truescoremode>
+        <truescore>1</truescore>
+        <truepenalty></truepenalty>
+        <truenextnode>-1</truenextnode>
+        <trueanswernote>prt4-1-T</trueanswernote>
+        <truefeedback format="html">
+          <text></text>
+        </truefeedback>
+        <falsescoremode>=</falsescoremode>
+        <falsescore>0</falsescore>
+        <falsepenalty></falsepenalty>
+        <falsenextnode>-1</falsenextnode>
+        <falseanswernote>prt4-1-F</falseanswernote>
+        <falsefeedback format="html">
+          <text></text>
+        </falsefeedback>
+      </node>
+    </prt>
+    <prt>
+      <name>prt5</name>
+      <value>1.0000000</value>
+      <autosimplify>1</autosimplify>
+      <feedbackstyle>1</feedbackstyle>
+      <feedbackvariables>
+        <text></text>
+      </feedbackvariables>
+      <node>
+        <name>0</name>
+        <description>check for correct choice</description>
+        <answertest>AlgEquiv</answertest>
+        <sans>ans5</sans>
+        <tans>mcq_correct(ta5)[1]</tans>
+        <testoptions></testoptions>
+        <quiet>0</quiet>
+        <truescoremode>=</truescoremode>
+        <truescore>1</truescore>
+        <truepenalty></truepenalty>
+        <truenextnode>-1</truenextnode>
+        <trueanswernote>prt5-1-T</trueanswernote>
+        <truefeedback format="html">
+          <text></text>
+        </truefeedback>
+        <falsescoremode>=</falsescoremode>
+        <falsescore>0</falsescore>
+        <falsepenalty></falsepenalty>
+        <falsenextnode>-1</falsenextnode>
+        <falseanswernote>prt5-1-F</falseanswernote>
+        <falsefeedback format="html">
+          <text></text>
+        </falsefeedback>
+      </node>
+    </prt>
+    <deployedseed>78210988</deployedseed>
+    <deployedseed>1844277981</deployedseed>
+    <deployedseed>125551317</deployedseed>
+    <deployedseed>271330401</deployedseed>
+    <deployedseed>1517147210</deployedseed>
+    <deployedseed>469109436</deployedseed>
+    <deployedseed>1065032778</deployedseed>
+    <deployedseed>853479327</deployedseed>
+    <deployedseed>1356056460</deployedseed>
+    <deployedseed>1104298364</deployedseed>
+    <deployedseed>28836581</deployedseed>
+    <deployedseed>481630816</deployedseed>
+    <deployedseed>38913362</deployedseed>
+    <deployedseed>1877558561</deployedseed>
+    <deployedseed>509562670</deployedseed>
+    <deployedseed>1255805873</deployedseed>
+    <deployedseed>858442035</deployedseed>
+    <deployedseed>669203774</deployedseed>
+    <deployedseed>154098405</deployedseed>
+    <deployedseed>2100665184</deployedseed>
+    <deployedseed>165992190</deployedseed>
+    <deployedseed>1563230111</deployedseed>
+    <deployedseed>776766762</deployedseed>
+    <deployedseed>874991737</deployedseed>
+    <deployedseed>259779310</deployedseed>
+    <deployedseed>629997494</deployedseed>
+    <deployedseed>64211136</deployedseed>
+    <deployedseed>1447472490</deployedseed>
+    <deployedseed>814248514</deployedseed>
+    <deployedseed>173222529</deployedseed>
+    <deployedseed>1074207197</deployedseed>
+    <deployedseed>1375315499</deployedseed>
+    <deployedseed>368488502</deployedseed>
+    <deployedseed>1475756260</deployedseed>
+    <deployedseed>1120005888</deployedseed>
+    <deployedseed>1326170687</deployedseed>
+    <deployedseed>707059887</deployedseed>
+    <deployedseed>1184595564</deployedseed>
+    <deployedseed>1152494106</deployedseed>
+    <deployedseed>69620358</deployedseed>
+    <deployedseed>1111306201</deployedseed>
+    <deployedseed>1037983703</deployedseed>
+    <deployedseed>1318263922</deployedseed>
+    <deployedseed>535212335</deployedseed>
+    <deployedseed>1449247789</deployedseed>
+    <deployedseed>599493146</deployedseed>
+    <deployedseed>1282829146</deployedseed>
+    <deployedseed>1544024691</deployedseed>
+    <deployedseed>762448172</deployedseed>
+    <deployedseed>1179908860</deployedseed>
+    <deployedseed>1374507122</deployedseed>
+    <deployedseed>1736993011</deployedseed>
+    <deployedseed>2091150878</deployedseed>
+    <deployedseed>711812249</deployedseed>
+    <deployedseed>165290309</deployedseed>
+    <deployedseed>2145845888</deployedseed>
+    <deployedseed>1655077516</deployedseed>
+    <deployedseed>772485742</deployedseed>
+    <deployedseed>1188259440</deployedseed>
+    <deployedseed>1880257764</deployedseed>
+    <deployedseed>1699929606</deployedseed>
+    <deployedseed>1721171738</deployedseed>
+    <deployedseed>762798701</deployedseed>
+    <deployedseed>1500494624</deployedseed>
+    <deployedseed>795510676</deployedseed>
+    <deployedseed>64044452</deployedseed>
+    <deployedseed>527216668</deployedseed>
+    <deployedseed>648213495</deployedseed>
+    <deployedseed>1574765817</deployedseed>
+    <deployedseed>1208050274</deployedseed>
+    <deployedseed>29041077</deployedseed>
+    <deployedseed>1351207245</deployedseed>
+    <deployedseed>892171142</deployedseed>
+    <deployedseed>409454405</deployedseed>
+    <deployedseed>357392428</deployedseed>
+    <deployedseed>1505899149</deployedseed>
+    <deployedseed>2022867970</deployedseed>
+    <deployedseed>282031241</deployedseed>
+    <deployedseed>697529304</deployedseed>
+    <deployedseed>1533258743</deployedseed>
+    <deployedseed>1379575835</deployedseed>
+    <deployedseed>1423236173</deployedseed>
+    <deployedseed>1689162734</deployedseed>
+    <deployedseed>1675068615</deployedseed>
+    <deployedseed>67515324</deployedseed>
+    <deployedseed>1746586469</deployedseed>
+    <deployedseed>739718561</deployedseed>
+    <deployedseed>1391378596</deployedseed>
+    <deployedseed>1492832652</deployedseed>
+    <deployedseed>740404630</deployedseed>
+    <deployedseed>1076113138</deployedseed>
+    <deployedseed>1292472483</deployedseed>
+    <deployedseed>1296784557</deployedseed>
+    <deployedseed>1210595044</deployedseed>
+    <deployedseed>356925228</deployedseed>
+    <deployedseed>1220237451</deployedseed>
+    <deployedseed>1467119208</deployedseed>
+    <deployedseed>472125702</deployedseed>
+    <deployedseed>969271081</deployedseed>
+    <deployedseed>1273790792</deployedseed>
+    <qtest>
+      <testcase>1</testcase>
+      <description></description>
+      <testinput>
+        <name>ans1</name>
+        <value>first(mcq_correct(ta1))</value>
+      </testinput>
+      <testinput>
+        <name>ans2</name>
+        <value>first(mcq_correct(ta2))</value>
+      </testinput>
+      <testinput>
+        <name>ans3</name>
+        <value>first(mcq_correct(ta3))</value>
+      </testinput>
+      <testinput>
+        <name>ans4</name>
+        <value>first(mcq_correct(ta4))</value>
+      </testinput>
+      <testinput>
+        <name>ans5</name>
+        <value>first(mcq_correct(ta5))</value>
+      </testinput>
+      <expected>
+        <name>prt1</name>
+        <expectedscore>1.0000000</expectedscore>
+        <expectedpenalty>0.0000000</expectedpenalty>
+        <expectedanswernote>prt1-1-T</expectedanswernote>
+      </expected>
+      <expected>
+        <name>prt2</name>
+        <expectedscore>1.0000000</expectedscore>
+        <expectedpenalty>0.0000000</expectedpenalty>
+        <expectedanswernote>prt2-1-T</expectedanswernote>
+      </expected>
+      <expected>
+        <name>prt3</name>
+        <expectedscore>1.0000000</expectedscore>
+        <expectedpenalty>0.0000000</expectedpenalty>
+        <expectedanswernote>prt3-1-T</expectedanswernote>
+      </expected>
+      <expected>
+        <name>prt4</name>
+        <expectedscore>1.0000000</expectedscore>
+        <expectedpenalty>0.0000000</expectedpenalty>
+        <expectedanswernote>prt4-1-T</expectedanswernote>
+      </expected>
+      <expected>
+        <name>prt5</name>
+        <expectedscore>1.0000000</expectedscore>
+        <expectedpenalty>0.0000000</expectedpenalty>
+        <expectedanswernote>prt5-1-T</expectedanswernote>
+      </expected>
+    </qtest>
+  </question>
+
+</quiz>
