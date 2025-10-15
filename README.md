@@ -23,6 +23,19 @@ This platform now includes **user authentication** using Supabase Auth, requirin
    SUPABASE_ANON_KEY=your_anon_key
    OPENAI_API_KEY=your_openai_key (optional)
    ```
+If you don't already have a `.env` file in the project root, copy the provided example:
+
+```bash
+cp .env.example .env
+```
+
+On Windows (PowerShell), run:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Fill in the values in `.env` with your Supabase project credentials. Do not commit `.env` to version control — it's already listed in `.gitignore`.
 
 ### Running the Application
 3. **Start the services**:
