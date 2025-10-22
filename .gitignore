@@ -1,2 +1,8 @@
 # Ignore environment files
 .env
+
+# Ignore local Azure deployment docs and config
+AZURE_DEPLOYMENT_GUIDE.md
+AZURE_QUICK_START.md
+deploy-to-azure.ps1
+azure-config.txt
