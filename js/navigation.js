@@ -9,16 +9,15 @@ let adaptiveMode = false; // Track if we're in adaptive remediation mode
 // Question sequence definition with remediation support
 const questionSequence = [
   {
-    title: "Matrix",
-    qfile: "questions/Basic Maths-System of Equations with No Solution.xml",
+    title: "Systems of Linear Equations: Row reduction",
+    qfile: "questions/Basic-Maths-System-of-Equations-with-No-Solution.xml",
     qname: "",
     topic: "systems_of_linear_equations",
     difficulty: "basic",
   },
   {
     title: "Matrix: Question 1",
-    qfile:
-      "questions/Finding the reduced row echelon form of a 4_4 matrix-question2.xml",
+    qfile:"questions/Finding the reduced row echelon form of a 4_4 matrix-question2.xml",
     qname: "",
     topic: "systems_of_linear_equations",
     difficulty: "basic",

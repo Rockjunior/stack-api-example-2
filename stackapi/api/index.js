@@ -434,13 +434,13 @@ app.post("/input", authenticateUser, async (req, res) => {
     }
 });
 
-// Simple in-memory cache for AI responses
-const aiCache = new Map();
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+// Caching removed to ensure fresh AI feedback on every request
 
 // 4. AI Feedback using ChatGPT
 app.post("/ai/feedback", async (req, res) => {
     try {
+        // Prevent any HTTP-level caching by proxies/clients
+        res.set('Cache-Control', 'no-store');
         const {
             userAnswers,
             correctAnswer,
@@ -453,21 +453,6 @@ app.post("/ai/feedback", async (req, res) => {
             maxScore,
             isCorrect
         } = req.body;
-
-        // Create cache key from request data
-        const cacheKey = JSON.stringify({
-            userAnswers,
-            correctAnswer,
-            questionText: questionText?.substring(0, 200), // Limit for key size
-            isCorrect
-        });
-
-        // Check cache first
-        const cached = aiCache.get(cacheKey);
-        if (cached && (Date.now() - cached.timestamp < CACHE_DURATION)) {
-            console.log('✅ AI Cache hit - returning cached response');
-            return res.json({ success: true, feedback: cached.response });
-        }
 
         // Build the prompt based on your sample code
         const userInput = typeof userAnswers === 'object' ? 
@@ -505,36 +490,54 @@ app.post("/ai/feedback", async (req, res) => {
 
         // TODO: Try this one.
 
-        // concise, structured, textbook-like explanations.
+        // Flexible tutoring style with variation to avoid repetitive feedback.
+        const styles = [
+            'step-by-step worked example',
+            'concept-first then example',
+            'common-mistakes-first coaching',
+            'Socratic questions guiding to the idea',
+            'compare-and-contrast two approaches'
+        ];
+        const chosenStyle = styles[Math.floor(Math.random() * styles.length)];
 
-        const systemPrompt = `You are an expert mathematics tutor who explains concepts to students in a clear, 
-            step-by-step way, just like a structured textbook or study guide.
-
-            CRITICAL: Responses must never exceed 400 words. Always keep answers complete but concise, 
-            so they do not get truncated.
-
-            For each problem:
-            1. Restate the original problem in simple words so the student understands the task.
-            2. Provide a clear, step-by-step solution written in a logical sequence. 
-            - Always finish the worked example. 
-            - Use equations, simplifications, and final answers explicitly.
-            3. Highlight the key concept the student should learn from this example. 
-            (e.g., "This is how partial fractions are used to rewrite a rational function.")
-            4. End with a short practice tip that helps the student apply the concept on their own.
-
+        const systemPrompt = `You are an expert mathematics tutor.
+            Write clear, rigorous explanations under 400 words.
+            Vary your presentation style to avoid repetition. For this response, use STYLE: "${chosenStyle}".
             Always:
-            - Write explanations as if the student is reading a math textbook (not as feedback about 
-            their performance).
-            - Use correct mathematical terminology and clear formatting.
-            - Be encouraging, but focused on the method.
-            - Ensure the solution and explanation fit fully within the 400-word limit.`;
+            - Tailor feedback to the student's specific inputs (quote or paraphrase them briefly).
+            - If the answer is incorrect, pinpoint the exact mistake before correcting it.
+            - If correct, validate the reasoning and offer a concise extension or alternative method.
+            - Prefer equations and short paragraphs over long prose.
+            - Keep tone encouraging and focus on understanding, not judgment.`;
+
+        // const systemPrompt = `You are an expert mathematics tutor who explains concepts to students in a clear, 
+        //     step-by-step way, just like a structured textbook or study guide.
+
+        //     CRITICAL: Responses must never exceed 400 words. Always keep answers complete but concise, 
+        //     so they do not get truncated.
+
+        //     For each problem:
+        //     1. Restate the original problem in simple words so the student understands the task.
+        //     2. Provide a clear, step-by-step solution written in a logical sequence. 
+        //     - Always finish the worked example. 
+        //     - Use equations, simplifications, and final answers explicitly.
+        //     3. Highlight the key concept the student should learn from this example. 
+        //     (e.g., "This is how partial fractions are used to rewrite a rational function.")
+        //     4. End with a short practice tip that helps the student apply the concept on their own.
+
+        //     Always:
+        //     - Write explanations as if the student is reading a math textbook (not as feedback about 
+        //     their performance).
+        //     - Use correct mathematical terminology and clear formatting.
+        //     - Be encouraging, but focused on the method.
+        //     - Ensure the solution and explanation fit fully within the 400-word limit.`;
 
         const contextInfo = `
             **Question Type:** ${questionType || 'Unknown'}
             **Additional Context:** ${additionalContext || 'None'}
             **General System Feedback:** ${generalFeedback || 'None'}`;
 
-        const message = `Analyze this specific mathematical problem and provide targeted educational feedback:
+        const message = `Analyze the student's response and provide targeted educational feedback using the requested STYLE.
 
             **Question:** ${question}
             ${contextInfo}
@@ -544,11 +547,11 @@ app.post("/ai/feedback", async (req, res) => {
             **Performance:** ${score}/${maxScore} (${isCorrect ? 'Correct' : 'Incorrect'})
 
             ${isCorrect ? 
-            'The student answered correctly. Explain their mathematical reasoning, show alternative solution methods for this specific problem type, and suggest related concepts they could explore.' : 
-            'The student answered incorrectly. Provide a complete step-by-step solution for this specific problem, identify what went wrong in their approach, explain the key mathematical concepts involved, and give targeted practice advice.'
+            'The student answered correctly. Briefly validate their reasoning, then provide either an alternative method or a next-step extension problem.' : 
+            'The student answered incorrectly. Identify the specific error based on their answer, then show a concise, correct path to the solution and one practice tip.'
             }
 
-            Focus on the specific mathematical content and problem-solving techniques relevant to this exact question.`;
+            Be concise, mathematically precise, and avoid repeating the same template across answers.`;
 
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
@@ -563,7 +566,10 @@ app.post("/ai/feedback", async (req, res) => {
                     { role: "user", content: message }
                 ],
                 max_tokens: 800,
-                temperature: 0.5,
+                temperature: 0.9,
+                top_p: 0.9,
+                presence_penalty: 0.3,
+                frequency_penalty: 0.2,
                 n: 1,
                 stream: false
             }),
@@ -587,19 +593,7 @@ app.post("/ai/feedback", async (req, res) => {
         
         aiResponse = aiResponse.trim();
 
-        // Cache the response
-        aiCache.set(cacheKey, {
-            response: aiResponse,
-            timestamp: Date.now()
-        });
-
-        // Clean old cache entries (simple cleanup)
-        if (aiCache.size > 100) {
-            const oldestKey = aiCache.keys().next().value;
-            aiCache.delete(oldestKey);
-        }
-
-        console.log('✅ AI feedback generated and cached');
+    console.log('✅ AI feedback generated');
         res.json({ success: true, feedback: aiResponse });
     } catch (err) {
         console.error('❌ AI feedback error:', err.message);
@@ -610,6 +604,8 @@ app.post("/ai/feedback", async (req, res) => {
             ? "Great work! You got the correct answer. Keep practicing similar problems to strengthen your understanding."
             : "This answer needs some work. Please review the problem carefully and try a different approach. Consider the key concepts involved and work through the steps systematically.";
             
+        // Also ensure no-store on fallback
+        res.set('Cache-Control', 'no-store');
         res.json({ 
             success: true, 
             feedback: fallbackResponse,
